@@ -38,20 +38,43 @@ export default function ProfilePage() {
 
   const fetchUserData = async () => {
     try {
-      const response = await fetch(`/api/users?userId=${user?.id}`);
-      const data = await response.json();
+      // Fetch user bookmarks
+      const bookmarksResponse = await fetch(`/api/bookmarks?userId=${user?.id}`);
+      const bookmarksData = await bookmarksResponse.json();
+      
+      // Fetch categories to get book names
+      const solveResponse = await fetch('/api/solve');
+      const solveData = await solveResponse.json();
+      
+      // Map bookmarks with book details
+      const bookmarksWithDetails = bookmarksData.bookmarks?.map((bookmark: any) => {
+        let bookDetails = null;
+        if (solveData.categories) {
+          for (const subject of solveData.categories) {
+            for (const grade of subject.children) {
+              const book = grade.children.find((b: any) => b.id === bookmark.bookId);
+              if (book) {
+                bookDetails = {
+                  ...bookmark,
+                  bookName: book.name,
+                  subject: subject.name,
+                  grade: grade.name,
+                };
+                break;
+              }
+            }
+            if (bookDetails) break;
+          }
+        }
+        return bookDetails || bookmark;
+      }) || [];
 
-      if (data.user) {
-        setStats({
-          completedQuestions: data.user.progress?.length || 0,
-          totalQuestions: data.user.totalQuestions || 0,
-          bookmarkedBooks: data.user.bookmarks?.length || 0,
-          questionsCreated: data.user.questionsCreated,
-          answersProvided: data.user.answersProvided,
-        });
-        setUserProgress(data.user.progress || []);
-        setBookmarks(data.user.bookmarks || []);
-      }
+      setStats({
+        completedQuestions: 0,
+        totalQuestions: 0,
+        bookmarkedBooks: bookmarksData.bookmarks?.length || 0,
+      });
+      setBookmarks(bookmarksWithDetails);
     } catch (error) {
       console.error('Error fetching user data:', error);
     }
@@ -243,9 +266,9 @@ export default function ProfilePage() {
         )}
 
         {/* Bookmarked Books */}
-        {bookmarks.length > 0 && (
-          <div className="bg-white rounded-2xl shadow-md p-8">
-            <h2 className="text-xl font-bold text-gray-900 mb-4">Sách đã lưu</h2>
+        <div className="bg-white rounded-2xl shadow-md p-8">
+          <h2 className="text-xl font-bold text-gray-900 mb-4">Sách đã lưu</h2>
+          {bookmarks.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {bookmarks.map((bookmark: any, index: number) => (
                 <div
@@ -253,15 +276,33 @@ export default function ProfilePage() {
                   className="p-4 border border-gray-200 rounded-lg hover:border-blue-500 hover:shadow-md transition cursor-pointer"
                   onClick={() => router.push(`/book/${bookmark.bookId}`)}
                 >
-                  <p className="font-medium text-gray-900">{bookmark.bookName || bookmark.bookId}</p>
-                  <p className="text-sm text-gray-500 mt-1">
+                  <div className="flex items-start justify-between mb-2">
+                    <p className="font-medium text-gray-900 flex-1">{bookmark.bookName || bookmark.bookId}</p>
+                    <svg className="w-5 h-5 text-amber-500 flex-shrink-0" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+                    </svg>
+                  </div>
+                  {bookmark.subject && bookmark.grade && (
+                    <p className="text-xs text-gray-500 mb-2">
+                      {bookmark.subject} • {bookmark.grade}
+                    </p>
+                  )}
+                  <p className="text-xs text-gray-400">
                     Đã lưu: {new Date(bookmark.bookmarkedAt).toLocaleDateString('vi-VN')}
                   </p>
                 </div>
               ))}
             </div>
-          </div>
-        )}
+          ) : (
+            <div className="text-center py-8 text-gray-500">
+              <svg className="w-16 h-16 mx-auto mb-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+              </svg>
+              <p>Chưa có sách nào được lưu</p>
+              <p className="text-sm mt-2">Hãy khám phá và lưu những sách yêu thích của bạn!</p>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

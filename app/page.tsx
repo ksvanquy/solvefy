@@ -3,6 +3,7 @@
 import React, { useEffect, useState, useMemo } from "react";
 import Link from "next/link";
 import Header from "./components/Header";
+import { useAuth } from "./contexts/AuthContext";
 
 type Lesson = { id: string; name: string; createdBy?: string };
 type Book = { id: string; name: string; children: Lesson[]; createdBy?: string };
@@ -11,12 +12,14 @@ type Subject = { id: string; name: string; children: Grade[] };
 type User = { id: string; username: string; fullName: string; role: string; avatar: string };
 
 export default function Home() {
+  const { user, isAuthenticated } = useAuth();
   const [categories, setCategories] = useState<Subject[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedSubject, setSelectedSubject] = useState<string>("all");
   const [collapsedGrades, setCollapsedGrades] = useState<Set<string>>(new Set());
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [bookmarkedBooks, setBookmarkedBooks] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     fetch('/api/solve')
@@ -28,8 +31,57 @@ export default function Home() {
       .catch((e) => console.error(e));
   }, []);
 
+  useEffect(() => {
+    if (user) {
+      fetch(`/api/bookmarks?userId=${user.id}`)
+        .then((r) => r.json())
+        .then((data) => {
+          if (data.bookmarks) {
+            const bookIds = new Set<string>(data.bookmarks.map((b: any) => b.bookId as string));
+            setBookmarkedBooks(bookIds);
+          }
+        })
+        .catch((e) => console.error(e));
+    }
+  }, [user]);
+
   const getUserInfo = (userId: string) => {
     return users.find((u) => u.id === userId);
+  };
+
+  const handleToggleBookmark = async (e: React.MouseEvent, bookId: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    if (!user) return;
+
+    try {
+      const isBookmarked = bookmarkedBooks.has(bookId);
+      
+      if (isBookmarked) {
+        const response = await fetch(`/api/bookmarks?userId=${user.id}&bookId=${bookId}`, {
+          method: 'DELETE',
+        });
+        if (response.ok) {
+          setBookmarkedBooks((prev) => {
+            const next = new Set(prev);
+            next.delete(bookId);
+            return next;
+          });
+        }
+      } else {
+        const response = await fetch('/api/bookmarks', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId: user.id, bookId }),
+        });
+        if (response.ok) {
+          setBookmarkedBooks((prev) => new Set(prev).add(bookId));
+        }
+      }
+    } catch (error) {
+      console.error('Error toggling bookmark:', error);
+    }
   };
 
   // Flatten all books for search
@@ -252,13 +304,33 @@ export default function Home() {
                                   <Link
                                     key={book.id}
                                     href={`/book/${book.id}`}
-                                    className="group bg-white border-2 border-zinc-200 rounded-xl p-4 hover:border-indigo-500 hover:shadow-lg transition-all duration-200"
+                                    className="group bg-white border-2 border-zinc-200 rounded-xl p-4 hover:border-indigo-500 hover:shadow-lg transition-all duration-200 relative"
                                   >
+                                    {isAuthenticated && (
+                                      <button
+                                        onClick={(e) => handleToggleBookmark(e, book.id)}
+                                        className="absolute top-3 right-3 z-10 p-1.5 rounded-lg hover:bg-zinc-100 transition-colors"
+                                        title={bookmarkedBooks.has(book.id) ? 'Đã lưu' : 'Lưu sách'}
+                                      >
+                                        <svg 
+                                          className={`w-5 h-5 ${
+                                            bookmarkedBooks.has(book.id)
+                                              ? 'text-amber-500 fill-amber-500'
+                                              : 'text-zinc-400 hover:text-amber-500'
+                                          } transition-colors`}
+                                          fill={bookmarkedBooks.has(book.id) ? 'currentColor' : 'none'}
+                                          stroke="currentColor"
+                                          viewBox="0 0 24 24"
+                                        >
+                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+                                        </svg>
+                                      </button>
+                                    )}
                                     <div className="flex items-start gap-3">
                                       <div className="flex-shrink-0 w-12 h-12 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-lg flex items-center justify-center text-2xl">
                                         📚
                                       </div>
-                                      <div className="flex-1 min-w-0">
+                                      <div className="flex-1 min-w-0 pr-6">
                                         <h4 className="font-semibold text-zinc-900 group-hover:text-indigo-600 transition-colors line-clamp-2 mb-2">
                                           {book.name}
                                         </h4>

@@ -37,6 +37,23 @@ export default function BookPage() {
   const [selectedQuestion, setSelectedQuestion] = useState<Question | null>(null);
   const [selectedAnswer, setSelectedAnswer] = useState<Answer | null>(null);
   const [editingQuestion, setEditingQuestion] = useState<Question | null>(null);
+  const [isBookmarked, setIsBookmarked] = useState(false);
+  const [bookmarkLoading, setBookmarkLoading] = useState(false);
+
+  useEffect(() => {
+    if (user) {
+      // Check if book is bookmarked
+      fetch(`/api/bookmarks?userId=${user.id}`)
+        .then((r) => r.json())
+        .then((data) => {
+          if (data.bookmarks) {
+            const bookmarked = data.bookmarks.some((b: any) => b.bookId === bookId);
+            setIsBookmarked(bookmarked);
+          }
+        })
+        .catch((e) => console.error(e));
+    }
+  }, [user, bookId]);
 
   useEffect(() => {
     fetch("/api/solve")
@@ -124,6 +141,37 @@ export default function BookPage() {
       }
     } catch (error) {
       console.error('Error deleting question:', error);
+    }
+  };
+
+  const handleToggleBookmark = async () => {
+    if (!user || bookmarkLoading) return;
+
+    setBookmarkLoading(true);
+    try {
+      if (isBookmarked) {
+        // Remove bookmark
+        const response = await fetch(`/api/bookmarks?userId=${user.id}&bookId=${bookId}`, {
+          method: 'DELETE',
+        });
+        if (response.ok) {
+          setIsBookmarked(false);
+        }
+      } else {
+        // Add bookmark
+        const response = await fetch('/api/bookmarks', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId: user.id, bookId }),
+        });
+        if (response.ok) {
+          setIsBookmarked(true);
+        }
+      }
+    } catch (error) {
+      console.error('Error toggling bookmark:', error);
+    } finally {
+      setBookmarkLoading(false);
     }
   };
 
@@ -243,6 +291,39 @@ export default function BookPage() {
         <main className="flex-1 overflow-y-auto">
           {selectedLesson ? (
             <div className="max-w-4xl mx-auto p-6">
+              {/* Book Info with Bookmark Button */}
+              <div className="mb-6 pb-6 border-b border-zinc-200">
+                <div className="flex items-start justify-between mb-4">
+                  <div>
+                    <h1 className="text-2xl font-bold text-zinc-900 mb-2">{bookInfo.book.name}</h1>
+                    <div className="flex items-center gap-3 text-sm text-zinc-500">
+                      <span className="flex items-center gap-1">
+                        📚 {bookInfo.subject}
+                      </span>
+                      <span className="flex items-center gap-1">
+                        🎓 {bookInfo.grade}
+                      </span>
+                    </div>
+                  </div>
+                  {isAuthenticated && (
+                    <button
+                      onClick={handleToggleBookmark}
+                      disabled={bookmarkLoading}
+                      className={`px-4 py-2 rounded-lg border transition-all flex items-center gap-2 ${
+                        isBookmarked
+                          ? 'bg-amber-50 border-amber-300 text-amber-700 hover:bg-amber-100'
+                          : 'bg-white border-zinc-300 text-zinc-700 hover:bg-zinc-50'
+                      } disabled:opacity-50 disabled:cursor-not-allowed`}
+                    >
+                      <svg className="w-5 h-5" fill={isBookmarked ? 'currentColor' : 'none'} stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+                      </svg>
+                      {isBookmarked ? 'Đã lưu' : 'Lưu sách'}
+                    </button>
+                  )}
+                </div>
+              </div>
+
               <div className="mb-6 flex items-center justify-between">
                 <div>
                   <h2 className="text-2xl font-semibold text-zinc-900">{selectedLesson.name}</h2>

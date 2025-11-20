@@ -1,65 +1,297 @@
-import Image from "next/image";
+"use client";
+
+import React, { useEffect, useState, useMemo } from "react";
+import Link from "next/link";
+import Header from "./components/Header";
+
+type Lesson = { id: string; name: string; createdBy?: string };
+type Book = { id: string; name: string; children: Lesson[]; createdBy?: string };
+type Grade = { id: string; name: string; children: Book[] };
+type Subject = { id: string; name: string; children: Grade[] };
+type User = { id: string; username: string; fullName: string; role: string; avatar: string };
 
 export default function Home() {
+  const [categories, setCategories] = useState<Subject[]>([]);
+  const [users, setUsers] = useState<User[]>([]);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedSubject, setSelectedSubject] = useState<string>("all");
+  const [collapsedGrades, setCollapsedGrades] = useState<Set<string>>(new Set());
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  useEffect(() => {
+    fetch('/api/solve')
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.categories) setCategories(data.categories);
+        if (data.users) setUsers(data.users);
+      })
+      .catch((e) => console.error(e));
+  }, []);
+
+  const getUserInfo = (userId: string) => {
+    return users.find((u) => u.id === userId);
+  };
+
+  // Flatten all books for search
+  const allBooks = useMemo(() => {
+    const books: Array<Book & { subjectName: string; gradeName: string; subjectId: string; gradeId: string }> = [];
+    categories.forEach((subject) => {
+      subject.children.forEach((grade) => {
+        grade.children.forEach((book) => {
+          books.push({
+            ...book,
+            subjectName: subject.name,
+            gradeName: grade.name,
+            subjectId: subject.id,
+            gradeId: grade.id,
+          });
+        });
+      });
+    });
+    return books;
+  }, [categories]);
+
+  // Filter books based on search and subject
+  const filteredBooks = useMemo(() => {
+    return allBooks.filter((book) => {
+      const matchesSearch = searchTerm === "" || 
+        book.name.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesSubject = selectedSubject === "all" || book.subjectId === selectedSubject;
+      return matchesSearch && matchesSubject;
+    });
+  }, [allBooks, searchTerm, selectedSubject]);
+
+  // Group filtered books by subject and grade
+  const groupedBooks = useMemo(() => {
+    const groups: Record<string, Record<string, typeof filteredBooks>> = {};
+    filteredBooks.forEach((book) => {
+      if (!groups[book.subjectId]) groups[book.subjectId] = {};
+      if (!groups[book.subjectId][book.gradeId]) groups[book.subjectId][book.gradeId] = [];
+      groups[book.subjectId][book.gradeId].push(book);
+    });
+    return groups;
+  }, [filteredBooks]);
+
+  const toggleGrade = (gradeId: string) => {
+    setCollapsedGrades((prev) => {
+      const next = new Set(prev);
+      if (next.has(gradeId)) next.delete(gradeId);
+      else next.add(gradeId);
+      return next;
+    });
+  };
+
+  const totalBooks = allBooks.length;
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
+    <div className="h-screen flex flex-col bg-zinc-50">
+      <Header
+        showMenuButton={true}
+        onMenuClick={() => setSidebarOpen(!sidebarOpen)}
+        searchTerm={searchTerm}
+        onSearchChange={setSearchTerm}
+        totalBooks={totalBooks}
+      />
+
+      <div className="flex-1 flex overflow-hidden">
+        {/* Sidebar - Môn học */}
+        <aside
+          className={`${
+            sidebarOpen ? "translate-x-0" : "-translate-x-full"
+          } lg:translate-x-0 fixed lg:static inset-y-0 left-0 z-30 w-64 bg-white border-r flex flex-col transition-transform duration-300 ease-in-out mt-[57px] lg:mt-0`}
+        >
+          <div className="p-4 border-b">
+            <h2 className="font-semibold text-zinc-900 text-sm uppercase tracking-wide">Môn học</h2>
+          </div>
+          
+          <nav className="flex-1 overflow-y-auto p-2">
+            <button
+              onClick={() => {
+                setSelectedSubject("all");
+                setSidebarOpen(false);
+              }}
+              className={`w-full text-left px-4 py-3 rounded-lg mb-1 transition-colors flex items-center justify-between ${
+                selectedSubject === "all"
+                  ? "bg-indigo-600 text-white"
+                  : "hover:bg-zinc-100 text-zinc-700"
+              }`}
             >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
+              <div className="flex items-center gap-3">
+                <span className="text-xl">📚</span>
+                <span className="font-medium">Tất cả</span>
+              </div>
+              <span className={`text-xs px-2 py-1 rounded-full ${
+                selectedSubject === "all" 
+                  ? "bg-indigo-500" 
+                  : "bg-zinc-200 text-zinc-600"
+              }`}>
+                {allBooks.length}
+              </span>
+            </button>
+
+            <div className="my-2 border-t"></div>
+
+            {categories.map((subject) => {
+              const count = allBooks.filter((b) => b.subjectId === subject.id).length;
+              const isActive = selectedSubject === subject.id;
+              const icon = subject.name === "Toán" ? "🔢" : subject.name === "Tiếng Việt" ? "📖" : "📚";
+              
+              return (
+                <button
+                  key={subject.id}
+                  onClick={() => {
+                    setSelectedSubject(subject.id);
+                    setSidebarOpen(false);
+                  }}
+                  className={`w-full text-left px-4 py-3 rounded-lg mb-1 transition-colors flex items-center justify-between ${
+                    isActive
+                      ? "bg-indigo-600 text-white"
+                      : "hover:bg-zinc-100 text-zinc-700"
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <span className="text-xl">{icon}</span>
+                    <span className="font-medium">{subject.name}</span>
+                  </div>
+                  <span className={`text-xs px-2 py-1 rounded-full ${
+                    isActive 
+                      ? "bg-indigo-500" 
+                      : "bg-zinc-200 text-zinc-600"
+                  }`}>
+                    {count}
+                  </span>
+                </button>
+              );
+            })}
+          </nav>
+        </aside>
+
+        {/* Overlay for mobile */}
+        {sidebarOpen && (
+          <div
+            className="fixed inset-0 bg-black/50 z-20 lg:hidden mt-[57px]"
+            onClick={() => setSidebarOpen(false)}
+          />
+        )}
+
+        {/* Main content */}
+        <main className="flex-1 overflow-y-auto bg-zinc-50 p-6">
+          {/* Mobile search */}
+          <div className="sm:hidden mb-4">
+            <div className="relative">
+              <input
+                type="text"
+                placeholder="Tìm kiếm sách..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full px-4 py-2 pl-10 border border-zinc-300 rounded-lg focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 focus:outline-none"
+              />
+              <svg
+                className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+            </div>
+          </div>
+
+          {filteredBooks.length === 0 ? (
+            <div className="text-center py-16">
+              <div className="text-6xl mb-4">📚</div>
+              <h3 className="text-xl font-semibold text-zinc-700 mb-2">
+                Không tìm thấy sách nào
+              </h3>
+              <p className="text-zinc-500">
+                Thử tìm kiếm với từ khóa khác hoặc chọn môn học khác
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-8">
+              {categories.map((subject) => {
+                if (!groupedBooks[subject.id]) return null;
+                
+                return (
+                  <div key={subject.id}>
+                    <h2 className="text-2xl font-bold text-zinc-900 mb-4 flex items-center gap-2">
+                      <span className="text-3xl">
+                        {subject.name === "Toán" ? "🔢" : "📖"}
+                      </span>
+                      {subject.name}
+                    </h2>
+
+                    {subject.children.map((grade) => {
+                      if (!groupedBooks[subject.id][grade.id]) return null;
+                      
+                      const isCollapsed = collapsedGrades.has(grade.id);
+                      const gradeBooks = groupedBooks[subject.id][grade.id];
+
+                      return (
+                        <div key={grade.id} className="mb-6">
+                          <button
+                            onClick={() => toggleGrade(grade.id)}
+                            className="flex items-center gap-2 mb-3 hover:text-indigo-600 transition-colors group"
+                          >
+                            <span className="text-lg group-hover:scale-110 transition-transform">
+                              {isCollapsed ? "▶" : "▼"}
+                            </span>
+                            <h3 className="text-lg font-semibold text-zinc-700">
+                              {grade.name}
+                            </h3>
+                            <span className="text-sm text-zinc-500">
+                              ({gradeBooks.length} sách)
+                            </span>
+                          </button>
+
+                          {!isCollapsed && (
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4">
+                              {gradeBooks.map((book) => {
+                                const creator = book.createdBy ? getUserInfo(book.createdBy) : null;
+                                return (
+                                  <Link
+                                    key={book.id}
+                                    href={`/book/${book.id}`}
+                                    className="group bg-white border-2 border-zinc-200 rounded-xl p-4 hover:border-indigo-500 hover:shadow-lg transition-all duration-200"
+                                  >
+                                    <div className="flex items-start gap-3">
+                                      <div className="flex-shrink-0 w-12 h-12 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-lg flex items-center justify-center text-2xl">
+                                        📚
+                                      </div>
+                                      <div className="flex-1 min-w-0">
+                                        <h4 className="font-semibold text-zinc-900 group-hover:text-indigo-600 transition-colors line-clamp-2 mb-2">
+                                          {book.name}
+                                        </h4>
+                                        <div className="space-y-1">
+                                          <div className="flex items-center gap-2 text-xs text-zinc-500">
+                                            <span className="px-2 py-1 bg-indigo-50 text-indigo-700 rounded-md font-medium">
+                                              {book.children.length} bài học
+                                            </span>
+                                          </div>
+                                          {creator && (
+                                            <div className="flex items-center gap-1 text-xs text-zinc-500">
+                                              <span>{creator.avatar}</span>
+                                              <span>Created by {creator.fullName}</span>
+                                            </div>
+                                          )}
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </Link>
+                                );
+                              })}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </main>
+      </div>
     </div>
   );
 }

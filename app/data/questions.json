@@ -1,0 +1,65 @@
+[
+  {
+    "id": "q1",
+    "lessonId": "ls1",
+    "title": "1 + 1 = ?",
+    "content": "Tính tổng của 1 và 1",
+    "createdBy": "a1",
+    "createdAt": "2025-10-01T08:00:00Z",
+    "updatedAt": "2025-10-01T08:00:00Z"
+  },
+  {
+    "id": "q2",
+    "lessonId": "ls1",
+    "title": "3 + 2 = ?",
+    "content": "Tính tổng của 3 và 2",
+    "createdBy": "a1",
+    "createdAt": "2025-10-01T08:05:00Z",
+    "updatedAt": "2025-10-01T08:05:00Z"
+  },
+  {
+    "id": "q3",
+    "lessonId": "ls2",
+    "title": "5 - 2 = ?",
+    "content": "Tính hiệu của 5 trừ 2",
+    "createdBy": "a1",
+    "createdAt": "2025-10-01T08:10:00Z",
+    "updatedAt": "2025-10-01T08:10:00Z"
+  },
+  {
+    "id": "q4",
+    "lessonId": "ls2",
+    "title": "6 - 4 = ?",
+    "content": "Tính hiệu của 6 trừ 4",
+    "createdBy": "a1",
+    "createdAt": "2025-10-01T08:15:00Z",
+    "updatedAt": "2025-10-01T08:15:00Z"
+  },
+  {
+    "id": "q5",
+    "lessonId": "ls9",
+    "title": "Viết chữ cái a, b, c",
+    "content": "Hãy viết các chữ cái a, b, c theo mẫu. Chú ý nét viết và khoảng cách giữa các chữ cái.",
+    "createdBy": "t3",
+    "createdAt": "2025-10-05T10:00:00Z",
+    "updatedAt": "2025-10-05T10:00:00Z"
+  },
+  {
+    "id": "q6",
+    "lessonId": "ls9",
+    "title": "Nối từ với hình",
+    "content": "Quan sát các hình ảnh và nối với từ tương ứng. Hãy đọc to từ khi nối xong.",
+    "createdBy": "t3",
+    "createdAt": "2025-10-05T10:10:00Z",
+    "updatedAt": "2025-10-05T10:10:00Z"
+  },
+  {
+    "id": "q7",
+    "lessonId": "ls1",
+    "title": "Câu hỏi số 3",
+    "content": "Câu hỏi mẫu số 3 về phép cộng cơ bản",
+    "createdBy": "a1",
+    "createdAt": "2025-11-20T16:06:21.121Z",
+    "updatedAt": "2025-11-20T16:06:21.121Z"
+  }
+]

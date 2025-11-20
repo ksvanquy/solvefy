@@ -1,0 +1,101 @@
+[
+  {
+    "id": "u1",
+    "username": "hoctro1",
+    "password": "hoctro1",
+    "fullName": "Nguyễn Văn A",
+    "email": "nguyenvana@email.com",
+    "grade": 1,
+    "avatar": "👦",
+    "role": "student",
+    "createdAt": "2025-11-01"
+  },
+  {
+    "id": "u2",
+    "username": "hoctro2",
+    "password": "hoctro2",
+    "fullName": "Trần Thị B",
+    "email": "tranthib@email.com",
+    "grade": 2,
+    "avatar": "👧",
+    "role": "student",
+    "createdAt": "2025-11-05"
+  },
+  {
+    "id": "u3",
+    "username": "hoctro3",
+    "password": "hoctro3",
+    "fullName": "Lê Văn C",
+    "email": "levanc@email.com",
+    "grade": 1,
+    "avatar": "👨",
+    "role": "student",
+    "createdAt": "2025-11-10"
+  },
+  {
+    "id": "u4",
+    "username": "hoctro4",
+    "password": "hoctro4",
+    "fullName": "Phạm Thị D",
+    "email": "phamthid@email.com",
+    "grade": 2,
+    "avatar": "👩",
+    "role": "student",
+    "createdAt": "2025-11-12"
+  },
+  {
+    "id": "t1",
+    "username": "giaovien1",
+    "password": "giaovien1",
+    "fullName": "Cô Nguyễn Mai",
+    "email": "nguyenmai@teacher.com",
+    "avatar": "👩‍🏫",
+    "role": "teacher",
+    "subjects": ["Toán", "Tiếng Việt"],
+    "createdAt": "2025-09-01"
+  },
+  {
+    "id": "t2",
+    "username": "giaovien2",
+    "password": "giaovien2",
+    "fullName": "Thầy Trần Minh",
+    "email": "tranminh@teacher.com",
+    "avatar": "👨‍🏫",
+    "role": "teacher",
+    "subjects": ["Toán"],
+    "createdAt": "2025-09-01"
+  },
+  {
+    "id": "t3",
+    "username": "giaovien3",
+    "password": "giaovien3",
+    "fullName": "Cô Lê Hương",
+    "email": "lehuong@teacher.com",
+    "avatar": "👩‍🏫",
+    "role": "teacher",
+    "subjects": ["Tiếng Việt"],
+    "createdAt": "2025-09-05"
+  },
+  {
+    "id": "a1",
+    "username": "admin1",
+    "password": "admin1",
+    "fullName": "Hiệu trưởng Phạm",
+    "email": "pham@solvefy.com",
+    "avatar": "👨‍💼",
+    "role": "admin",
+    "permissions": ["manage_users", "manage_content", "view_analytics"],
+    "createdAt": "2025-08-01"
+  },
+  {
+    "id": "a2",
+    "username": "admin2",
+    "password": "admin2",
+    "fullName": "Admin",
+    "email": "admin@solvefy.com",
+    "avatar": "👩‍💼",
+    "role": "admin",
+    "permissions": ["manage_users", "manage_content"],
+    "createdAt": "2025-08-15"
+  }
+]

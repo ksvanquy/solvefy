@@ -1,0 +1,56 @@
+[
+  {
+    "id": "a1",
+    "questionId": "q1",
+    "answer": "21",
+    "explain": "1 + 1 = 2",
+    "createdBy": "a1",
+    "createdAt": "2025-10-01T08:00:00Z",
+    "updatedAt": "2025-11-20T15:56:22.644Z"
+  },
+  {
+    "id": "a2",
+    "questionId": "q2",
+    "answer": "51",
+    "explain": "3 + 2 = 5",
+    "createdBy": "a1",
+    "createdAt": "2025-10-01T08:05:00Z",
+    "updatedAt": "2025-11-20T15:56:25.724Z"
+  },
+  {
+    "id": "a3",
+    "questionId": "q3",
+    "answer": "3",
+    "explain": "5 - 2 = 3",
+    "createdBy": "a1",
+    "createdAt": "2025-10-01T08:10:00Z",
+    "updatedAt": "2025-10-01T08:10:00Z"
+  },
+  {
+    "id": "a4",
+    "questionId": "q4",
+    "answer": "2",
+    "explain": "6 - 4 = 2",
+    "createdBy": "a1",
+    "createdAt": "2025-10-01T08:15:00Z",
+    "updatedAt": "2025-10-01T08:15:00Z"
+  },
+  {
+    "id": "a5",
+    "questionId": "q5",
+    "answer": "a, b, c",
+    "explain": "Viết chữ a, b, c đúng thứ tự",
+    "createdBy": "t3",
+    "createdAt": "2025-10-05T10:00:00Z",
+    "updatedAt": "2025-10-05T10:00:00Z"
+  },
+  {
+    "id": "a6",
+    "questionId": "q6",
+    "answer": "đúng",
+    "explain": "Nối từ với hình đúng",
+    "createdBy": "t3",
+    "createdAt": "2025-10-05T10:10:00Z",
+    "updatedAt": "2025-10-05T10:10:00Z"
+  }
+]

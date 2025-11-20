@@ -1,0 +1,52 @@
+[
+  {
+    "id": "up1",
+    "userId": "u1",
+    "questionId": "q1",
+    "status": "completed",
+    "userAnswer": "2",
+    "isCorrect": true,
+    "attempts": 1,
+    "completedAt": "2025-11-20T10:30:00Z"
+  },
+  {
+    "id": "up2",
+    "userId": "u1",
+    "questionId": "q2",
+    "status": "completed",
+    "userAnswer": "5",
+    "isCorrect": true,
+    "attempts": 1,
+    "completedAt": "2025-11-20T10:35:00Z"
+  },
+  {
+    "id": "up3",
+    "userId": "u1",
+    "questionId": "q3",
+    "status": "in_progress",
+    "userAnswer": null,
+    "isCorrect": null,
+    "attempts": 0,
+    "completedAt": null
+  },
+  {
+    "id": "up4",
+    "userId": "u2",
+    "questionId": "q3",
+    "status": "completed",
+    "userAnswer": "3",
+    "isCorrect": true,
+    "attempts": 1,
+    "completedAt": "2025-11-19T14:20:00Z"
+  },
+  {
+    "id": "up5",
+    "userId": "u2",
+    "questionId": "q4",
+    "status": "completed",
+    "userAnswer": "3",
+    "isCorrect": false,
+    "attempts": 2,
+    "completedAt": "2025-11-19T14:25:00Z"
+  }
+]

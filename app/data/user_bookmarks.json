@@ -16,5 +16,11 @@
     "userId": "u1",
     "bookId": "bk2",
     "bookmarkedAt": "2025-11-20T16:22:27.951Z"
+  },
+  {
+    "id": "ub1763656196710",
+    "userId": "u1",
+    "bookId": "bk4",
+    "bookmarkedAt": "2025-11-20T16:29:56.710Z"
   }
 ]

@@ -38,6 +38,10 @@ export default function ProfilePage() {
 
   const fetchUserData = async () => {
     try {
+      // Fetch user progress
+      const progressResponse = await fetch(`/api/progress?userId=${user?.id}`);
+      const progressData = await progressResponse.json();
+      
       // Fetch user bookmarks
       const bookmarksResponse = await fetch(`/api/bookmarks?userId=${user?.id}`);
       const bookmarksData = await bookmarksResponse.json();
@@ -69,11 +73,24 @@ export default function ProfilePage() {
         return bookDetails || bookmark;
       }) || [];
 
+      // Map progress with question details
+      const progressWithDetails = progressData.progress?.map((prog: any) => {
+        const question = solveData.questions?.find((q: any) => q.id === prog.questionId);
+        return {
+          ...prog,
+          questionTitle: question?.title || prog.questionId,
+          questionContent: question?.content,
+        };
+      }) || [];
+
+      const completedCount = progressData.progress?.filter((p: any) => p.status === 'completed').length || 0;
+
       setStats({
-        completedQuestions: 0,
-        totalQuestions: 0,
+        completedQuestions: completedCount,
+        totalQuestions: solveData.questions?.length || 0,
         bookmarkedBooks: bookmarksData.bookmarks?.length || 0,
       });
+      setUserProgress(progressWithDetails);
       setBookmarks(bookmarksWithDetails);
     } catch (error) {
       console.error('Error fetching user data:', error);
@@ -235,24 +252,36 @@ export default function ProfilePage() {
           <div className="bg-white rounded-2xl shadow-md p-8 mb-6">
             <h2 className="text-xl font-bold text-gray-900 mb-4">Hoạt động gần đây</h2>
             <div className="space-y-3">
-              {userProgress.slice(0, 5).map((progress: any, index: number) => (
-                <div key={index} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                  <div className="flex items-center space-x-4">
-                    <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+              {userProgress.slice(0, 10).map((progress: any, index: number) => (
+                <div key={index} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
+                  <div className="flex items-center space-x-4 flex-1 min-w-0">
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${
                       progress.status === 'completed' ? 'bg-green-100' : 'bg-yellow-100'
                     }`}>
                       <span className="text-lg">
                         {progress.status === 'completed' ? '✓' : '⏱'}
                       </span>
                     </div>
-                    <div>
-                      <p className="font-medium text-gray-900">Câu hỏi {progress.questionId}</p>
-                      <p className="text-sm text-gray-500">
-                        {new Date(progress.completedAt || progress.startedAt).toLocaleDateString('vi-VN')}
-                      </p>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-gray-900 truncate">{progress.questionTitle}</p>
+                      <div className="flex items-center gap-2 text-sm text-gray-500 mt-1">
+                        <span>
+                          {progress.completedAt 
+                            ? new Date(progress.completedAt).toLocaleDateString('vi-VN')
+                            : 'Chưa hoàn thành'}
+                        </span>
+                        {progress.isCorrect !== null && (
+                          <span className={`px-2 py-0.5 rounded text-xs font-medium ${
+                            progress.isCorrect ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                          }`}>
+                            {progress.isCorrect ? 'Đúng' : 'Sai'}
+                          </span>
+                        )}
+                        <span className="text-xs">• {progress.attempts} lần thử</span>
+                      </div>
                     </div>
                   </div>
-                  <span className={`px-3 py-1 rounded-full text-sm font-medium ${
+                  <span className={`px-3 py-1 rounded-full text-sm font-medium flex-shrink-0 ${
                     progress.status === 'completed'
                       ? 'bg-green-100 text-green-700'
                       : 'bg-yellow-100 text-yellow-700'

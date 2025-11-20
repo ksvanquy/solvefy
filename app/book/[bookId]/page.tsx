@@ -14,6 +14,13 @@ type Answer = { id: string; questionId: string; answer: string; explain: string;
 type Lesson = { id: string; name: string; createdBy?: string };
 type Book = { id: string; name: string; children: Lesson[]; createdBy?: string };
 type User = { id: string; username: string; fullName: string; role: string; avatar: string };
+type Progress = {
+  id: string;
+  userId: string;
+  lessonId: string;
+  status: string;
+  completedAt: string;
+};
 
 export default function BookPage() {
   const params = useParams();
@@ -39,6 +46,7 @@ export default function BookPage() {
   const [editingQuestion, setEditingQuestion] = useState<Question | null>(null);
   const [isBookmarked, setIsBookmarked] = useState(false);
   const [bookmarkLoading, setBookmarkLoading] = useState(false);
+  const [progressMap, setProgressMap] = useState<Record<string, Progress>>({});
 
   useEffect(() => {
     if (user) {
@@ -49,6 +57,20 @@ export default function BookPage() {
           if (data.bookmarks) {
             const bookmarked = data.bookmarks.some((b: any) => b.bookId === bookId);
             setIsBookmarked(bookmarked);
+          }
+        })
+        .catch((e) => console.error(e));
+      
+      // Fetch user progress
+      fetch(`/api/progress?userId=${user.id}`)
+        .then((r) => r.json())
+        .then((data) => {
+          if (data.progress) {
+            const progressByLesson: Record<string, Progress> = {};
+            data.progress.forEach((p: Progress) => {
+              progressByLesson[p.lessonId] = p;
+            });
+            setProgressMap(progressByLesson);
           }
         })
         .catch((e) => console.error(e));
@@ -141,6 +163,33 @@ export default function BookPage() {
       }
     } catch (error) {
       console.error('Error deleting question:', error);
+    }
+  };
+
+  const handleMarkLessonComplete = async (lessonId: string) => {
+    if (!user) return;
+
+    try {
+      const response = await fetch('/api/progress', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: user.id,
+          lessonId,
+        }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.progress) {
+          setProgressMap((prev) => ({
+            ...prev,
+            [lessonId]: data.progress,
+          }));
+        }
+      }
+    } catch (error) {
+      console.error('Error marking lesson as complete:', error);
     }
   };
 
@@ -247,6 +296,7 @@ export default function BookPage() {
               const lessonQuestions = getLessonQuestions(lesson.id);
               const isActive = selectedLessonId === lesson.id;
               const lessonCreator = lesson.createdBy ? getUserInfo(lesson.createdBy) : null;
+              const isCompleted = progressMap[lesson.id]?.status === 'completed';
               
               return (
                 <button
@@ -255,24 +305,37 @@ export default function BookPage() {
                     setSelectedLessonId(lesson.id);
                     setSidebarOpen(false); // Close sidebar on mobile after selection
                   }}
-                  className={`w-full text-left p-3 rounded-lg mb-1 transition-colors ${
+                  className={`w-full text-left p-3 rounded-lg mb-1 transition-colors relative ${
                     isActive
                       ? "bg-indigo-50 border-2 border-indigo-500"
                       : "hover:bg-zinc-50 border-2 border-transparent"
                   }`}
                 >
-                  <div className={`font-medium ${isActive ? "text-indigo-700" : "text-zinc-800"}`}>
-                    {lesson.name}
-                  </div>
-                  <div className="text-xs text-zinc-500 mt-1">
-                    {lessonQuestions.length} câu hỏi
-                  </div>
-                  {lessonCreator && (
-                    <div className="flex items-center gap-1 text-xs text-zinc-400 mt-1">
-                      <span className="text-xs">{lessonCreator.avatar}</span>
-                      <span>{lessonCreator.fullName}</span>
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex-1">
+                      <div className={`font-medium ${isActive ? "text-indigo-700" : "text-zinc-800"}`}>
+                        {lesson.name}
+                      </div>
+                      <div className="text-xs text-zinc-500 mt-1">
+                        {lessonQuestions.length} câu hỏi
+                      </div>
+                      {lessonCreator && (
+                        <div className="flex items-center gap-1 text-xs text-zinc-400 mt-1">
+                          <span className="text-xs">{lessonCreator.avatar}</span>
+                          <span>{lessonCreator.fullName}</span>
+                        </div>
+                      )}
                     </div>
-                  )}
+                    {isCompleted && (
+                      <div className="flex-shrink-0">
+                        <span className="inline-flex items-center justify-center w-6 h-6 bg-green-100 rounded-full">
+                          <svg className="w-4 h-4 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                          </svg>
+                        </span>
+                      </div>
+                    )}
+                  </div>
                 </button>
               );
             })}
@@ -325,23 +388,46 @@ export default function BookPage() {
               </div>
 
               <div className="mb-6 flex items-center justify-between">
-                <div>
-                  <h2 className="text-2xl font-semibold text-zinc-900">{selectedLesson.name}</h2>
-                  <p className="text-sm text-zinc-500 mt-1">
-                    {selectedQuestions.length} câu hỏi
-                  </p>
+                <div className="flex items-center gap-3">
+                  <div>
+                    <h2 className="text-2xl font-semibold text-zinc-900">{selectedLesson.name}</h2>
+                    <p className="text-sm text-zinc-500 mt-1">
+                      {selectedQuestions.length} câu hỏi
+                    </p>
+                  </div>
+                  {progressMap[selectedLesson.id]?.status === 'completed' && (
+                    <span className="inline-flex items-center gap-1 px-3 py-1 bg-green-100 text-green-700 text-sm font-medium rounded-full">
+                      <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                      </svg>
+                      Đã hoàn thành
+                    </span>
+                  )}
                 </div>
-                {isAuthenticated && (
-                  <button
-                    onClick={() => setShowQuestionForm(true)}
-                    className="px-4 py-2 bg-blue-100 text-blue-700 border border-blue-200 rounded-lg hover:bg-blue-200 transition font-medium flex items-center gap-2"
-                  >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                    </svg>
-                    Đặt câu hỏi
-                  </button>
-                )}
+                <div className="flex items-center gap-2">
+                  {isAuthenticated && !progressMap[selectedLesson.id] && (
+                    <button
+                      onClick={() => handleMarkLessonComplete(selectedLesson.id)}
+                      className="px-4 py-2 bg-green-100 text-green-700 border border-green-200 rounded-lg hover:bg-green-200 transition font-medium flex items-center gap-2"
+                    >
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                      Đánh dấu hoàn thành
+                    </button>
+                  )}
+                  {isAuthenticated && (
+                    <button
+                      onClick={() => setShowQuestionForm(true)}
+                      className="px-4 py-2 bg-blue-100 text-blue-700 border border-blue-200 rounded-lg hover:bg-blue-200 transition font-medium flex items-center gap-2"
+                    >
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                      </svg>
+                      Đặt câu hỏi
+                    </button>
+                  )}
+                </div>
               </div>
 
               {selectedQuestions.length === 0 ? (

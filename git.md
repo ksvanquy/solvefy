@@ -1,4 +1,4 @@
 git status
 git add .
-git commit -m "user progess"
+git commit -m "migration plan"
 git push

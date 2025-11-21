@@ -24,62 +24,75 @@
 🏗️ Backend Architecture:
 ├── 🎮 Controllers      - API endpoints
 ├── 🔧 Services         - Business logic
-├── 📊 Schemas          - MongoDB Mongoose schemas
-├── 🗃️ Models           - Mongoose models
+├── 📊 Schemas          - MongoDB schemas (giữ nguyên cấu trúc JSON)
+├── 🗃️ Models           - Mongoose models (1:1 mapping với JSON)
 ├── 🛡️ Guards           - Authentication & authorization
 ├── 🔍 DTOs             - Data transfer objects
 └── 📋 Validators       - Input validation
+
+💡 CHIẾN LƯỢC MIGRATION: Giữ nguyên 100% cấu trúc dữ liệu từ JSON files
 ```
 
 ---
 
 ## 📊 DATABASE SCHEMA DESIGN
 
-### **MongoDB Document Structure**:
+### **MongoDB Collections (Giữ nguyên cấu trúc JSON)**:
 ```
-📄 Users Collection
-├── _id: ObjectId
-├── profile: embedded document
-├── progress: [ObjectId] references
-└── bookmarks: [ObjectId] references
+📄 users Collection (từ users.json)
+├── _id: string (giữ nguyên từ JSON)
+├── username, email, password, fullName
+├── avatar, role, grade, subjects
+└── permissions, isActive
 
-📄 Subjects Collection
-├── _id: ObjectId
-├── grades: [embedded documents]
-│   ├── books: [embedded documents]
-│   │   └── lessons: [ObjectId] references
-│   └── ...
-└── ...
+📄 categories Collection (từ categories.json)
+├── _id: string (giữ nguyên từ JSON)
+├── name, type, parentId
+├── children: [nested objects] (giữ nguyên cấu trúc hierarchical)
+└── sortOrder, isActive
 
-📄 Lessons Collection
-├── _id: ObjectId
-├── bookId: ObjectId reference
-└── questions: [ObjectId] references
+📄 questions Collection (từ questions.json)
+├── _id: string (giữ nguyên từ JSON)
+├── lessonId, title, content
+├── difficulty, questionType, points
+└── createdBy, createdAt
 
-📄 Questions Collection
-├── _id: ObjectId
-├── lessonId: ObjectId reference
-└── answers: [embedded documents]
+📄 answers Collection (từ answers.json)
+├── _id: string (giữ nguyên từ JSON)
+├── questionId, content, explanation
+├── isCorrect, sortOrder
+└── createdBy, createdAt
 
-📄 UserProgress Collection
-├── _id: ObjectId
-├── userId: ObjectId reference
-├── questionId: ObjectId reference
-└── stats: embedded document
+📄 user_progress Collection (từ user_progress.json)
+├── _id: string (giữ nguyên từ JSON)
+├── userId, questionId, lessonId
+├── status, userAnswer, isCorrect
+└── attempts, timeSpent, completedAt
+
+📄 user_bookmarks Collection (từ user_bookmarks.json)
+├── _id: string (giữ nguyên từ JSON)
+├── userId, bookId, notes
+└── createdAt, updatedAt
 ```
 
 ### **Core MongoDB Schemas**:
 
-#### **1. Users Schema**
+#### **1. Users Schema (Giữ nguyên cấu trúc users.json)**
 ```typescript
 // src/users/schemas/user.schema.ts
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document, Types } from 'mongoose';
+import { Document } from 'mongoose';
 
 export type UserDocument = User & Document;
 
-@Schema({ timestamps: true })
+@Schema({ 
+  timestamps: true,
+  _id: false // Sử dụng string ID từ JSON
+})
 export class User {
+  @Prop({ type: String, required: true, unique: true })
+  _id: string; // Giữ nguyên ID từ JSON (u1, u2, admin1, ...)
+
   @Prop({ required: true, unique: true, trim: true })
   username: string;
 
@@ -87,13 +100,13 @@ export class User {
   email: string;
 
   @Prop({ required: true })
-  passwordHash: string;
+  password: string; // Giữ tên field như JSON (sẽ hash khi save)
 
   @Prop({ required: true, trim: true })
   fullName: string;
 
   @Prop({ trim: true })
-  avatarUrl?: string;
+  avatar?: string; // Giữ tên field như JSON
 
   @Prop({ enum: ['student', 'teacher', 'admin'], default: 'student' })
   role: string;
@@ -109,15 +122,6 @@ export class User {
 
   @Prop({ default: true })
   isActive: boolean;
-
-  @Prop({ default: false })
-  emailVerified: boolean;
-
-  // Virtual for progress
-  progress: Types.ObjectId[];
-  
-  // Virtual for bookmarks
-  bookmarks: Types.ObjectId[];
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);
@@ -126,202 +130,97 @@ export const UserSchema = SchemaFactory.createForClass(User);
 UserSchema.index({ username: 1 });
 UserSchema.index({ email: 1 });
 UserSchema.index({ role: 1 });
+
+// Pre-save middleware to hash password
+UserSchema.pre('save', async function(next) {
+  if (!this.isModified('password')) return next();
+  
+  const bcrypt = require('bcryptjs');
+  this.password = await bcrypt.hash(this.password, 12);
+  next();
+});
 ```
 
-#### **2. Subjects Schema (Hierarchical with Embedded Documents)**
+#### **2. Categories Schema (Giữ nguyên cấu trúc categories.json)**
 ```typescript
-// src/subjects/schemas/subject.schema.ts
+// src/categories/schemas/category.schema.ts
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document, Types } from 'mongoose';
+import { Document } from 'mongoose';
 
-// Book subdocument schema
-@Schema({ timestamps: true })
-export class Book {
-  @Prop({ required: true })
-  name: string;
+export type CategoryDocument = Category & Document;
 
-  @Prop({ required: true })
-  slug: string;
+@Schema({ 
+  timestamps: true,
+  _id: false // Sử dụng string ID từ JSON
+})
+export class Category {
+  @Prop({ type: String, required: true, unique: true })
+  _id: string; // Giữ nguyên ID từ JSON (toan, tiengviet, lop1_toan, ...)
 
-  @Prop()
-  description?: string;
-
-  @Prop()
-  publisher?: string;
-
-  @Prop()
-  publicationYear?: number;
-
-  @Prop()
-  coverImageUrl?: string;
-
-  @Prop({ default: 0 })
-  sortOrder: number;
-
-  @Prop({ default: true })
-  isActive: boolean;
-
-  @Prop({ type: Types.ObjectId, ref: 'User' })
-  createdBy?: Types.ObjectId;
-
-  // References to lessons
-  @Prop({ type: [{ type: Types.ObjectId, ref: 'Lesson' }], default: [] })
-  lessons: Types.ObjectId[];
-}
-
-const BookSchema = SchemaFactory.createForClass(Book);
-
-// Grade subdocument schema
-@Schema({ timestamps: true })
-export class Grade {
-  @Prop({ required: true })
-  name: string;
-
-  @Prop({ required: true })
-  slug: string;
-
-  @Prop({ required: true, min: 1, max: 12 })
-  level: number;
-
-  @Prop()
-  description?: string;
-
-  @Prop({ default: 0 })
-  sortOrder: number;
-
-  @Prop({ default: true })
-  isActive: boolean;
-
-  @Prop({ type: Types.ObjectId, ref: 'User' })
-  createdBy?: Types.ObjectId;
-
-  // Embedded books
-  @Prop({ type: [BookSchema], default: [] })
-  books: Book[];
-}
-
-const GradeSchema = SchemaFactory.createForClass(Grade);
-
-// Main Subject schema
-export type SubjectDocument = Subject & Document;
-
-@Schema({ timestamps: true })
-export class Subject {
   @Prop({ required: true, trim: true })
   name: string;
 
-  @Prop({ required: true, unique: true, lowercase: true })
-  slug: string;
+  @Prop({ enum: ['subject', 'grade', 'book', 'lesson'], required: true })
+  type: string;
 
-  @Prop({ trim: true })
+  @Prop({ type: String })
+  parentId?: string; // Reference đến parent category
+
+  @Prop()
   description?: string;
 
-  @Prop({ trim: true })
+  @Prop({ default: 0 })
+  sortOrder: number;
+
+  @Prop({ default: true })
+  isActive: boolean;
+
+  @Prop({ type: String })
+  createdBy?: string;
+
+  // Giữ nguyên nested structure từ JSON
+  @Prop({ type: [Object], default: [] })
+  children: any[]; // Nested children như trong JSON gốc
+
+  // Metadata bổ sung
+  @Prop()
   icon?: string;
 
-  @Prop({ default: 0 })
-  sortOrder: number;
-
-  @Prop({ default: true })
-  isActive: boolean;
-
-  @Prop({ type: Types.ObjectId, ref: 'User' })
-  createdBy?: Types.ObjectId;
-
-  // Embedded grades
-  @Prop({ type: [GradeSchema], default: [] })
-  grades: Grade[];
-}
-
-export const SubjectSchema = SchemaFactory.createForClass(Subject);
-
-// Add indexes
-SubjectSchema.index({ slug: 1 });
-SubjectSchema.index({ name: 1 });
-SubjectSchema.index({ 'grades.slug': 1 });
-SubjectSchema.index({ 'grades.books.slug': 1 });
-```
-
-#### **3. Lessons Schema (Separate Collection)**
-```typescript
-// src/lessons/schemas/lesson.schema.ts
-import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document, Types } from 'mongoose';
-
-export type LessonDocument = Lesson & Document;
-
-@Schema({ timestamps: true })
-export class Lesson {
-  @Prop({ required: true })
-  name: string;
-
-  @Prop({ required: true })
-  slug: string;
+  @Prop()
+  color?: string;
 
   @Prop()
-  description?: string;
-
-  @Prop()
-  content?: string; // Rich text content
-
-  @Prop({ default: 0 })
-  sortOrder: number;
-
-  @Prop({ default: true })
-  isActive: boolean;
-
-  // Reference to book (parent)
-  @Prop({ type: Types.ObjectId, required: true })
-  bookId: Types.ObjectId;
-
-  @Prop({ type: Types.ObjectId, ref: 'User' })
-  createdBy?: Types.ObjectId;
-
-  // References to questions
-  @Prop({ type: [{ type: Types.ObjectId, ref: 'Question' }], default: [] })
-  questions: Types.ObjectId[];
+  imageUrl?: string;
 }
 
-export const LessonSchema = SchemaFactory.createForClass(Lesson);
+export const CategorySchema = SchemaFactory.createForClass(Category);
 
 // Add indexes
-LessonSchema.index({ bookId: 1 });
-LessonSchema.index({ slug: 1, bookId: 1 }, { unique: true });
-LessonSchema.index({ sortOrder: 1 });
+CategorySchema.index({ type: 1 });
+CategorySchema.index({ parentId: 1 });
+CategorySchema.index({ name: 1 });
+CategorySchema.index({ sortOrder: 1 });
 ```
 
-#### **4. Questions & Answers Schema**
+#### **3. Questions Schema (Giữ nguyên cấu trúc questions.json)**
 ```typescript
 // src/questions/schemas/question.schema.ts
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document, Types } from 'mongoose';
+import { Document } from 'mongoose';
 
-// Answer subdocument schema
-@Schema({ timestamps: true })
-export class Answer {
-  @Prop({ required: true })
-  content: string;
-
-  @Prop()
-  explanation?: string;
-
-  @Prop({ default: false })
-  isCorrect: boolean;
-
-  @Prop({ default: 0 })
-  sortOrder: number;
-
-  @Prop({ type: Types.ObjectId, ref: 'User' })
-  createdBy?: Types.ObjectId;
-}
-
-const AnswerSchema = SchemaFactory.createForClass(Answer);
-
-// Main Question schema
 export type QuestionDocument = Question & Document;
 
-@Schema({ timestamps: true })
+@Schema({ 
+  timestamps: true,
+  _id: false // Sử dụng string ID từ JSON
+})
 export class Question {
+  @Prop({ type: String, required: true, unique: true })
+  _id: string; // Giữ nguyên ID từ JSON (q1, q2, q3, ...)
+
+  @Prop({ type: String, required: true })
+  lessonId: string; // Reference đến lesson trong categories
+
   @Prop({ required: true, trim: true })
   title: string;
 
@@ -355,16 +254,14 @@ export class Question {
   @Prop({ default: true })
   isActive: boolean;
 
-  // Reference to lesson
-  @Prop({ type: Types.ObjectId, ref: 'Lesson', required: true })
-  lessonId: Types.ObjectId;
+  @Prop({ type: String })
+  createdBy?: string; // Reference đến user ID
 
-  @Prop({ type: Types.ObjectId, ref: 'User' })
-  createdBy?: Types.ObjectId;
+  @Prop({ type: Date, default: Date.now })
+  createdAt: Date;
 
-  // Embedded answers
-  @Prop({ type: [AnswerSchema], default: [] })
-  answers: Answer[];
+  @Prop({ type: Date, default: Date.now })
+  updatedAt: Date;
 }
 
 export const QuestionSchema = SchemaFactory.createForClass(Question);
@@ -375,26 +272,83 @@ QuestionSchema.index({ title: 'text', content: 'text' });
 QuestionSchema.index({ tags: 1 });
 QuestionSchema.index({ difficulty: 1 });
 QuestionSchema.index({ questionType: 1 });
+QuestionSchema.index({ createdBy: 1 });
 ```
 
-#### **5. User Progress & Bookmarks Schema**
+#### **4. Answers Schema (Giữ nguyên cấu trúc answers.json)**
+```typescript
+// src/answers/schemas/answer.schema.ts
+import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
+import { Document } from 'mongoose';
+
+export type AnswerDocument = Answer & Document;
+
+@Schema({ 
+  timestamps: true,
+  _id: false // Sử dụng string ID từ JSON
+})
+export class Answer {
+  @Prop({ type: String, required: true, unique: true })
+  _id: string; // Giữ nguyên ID từ JSON (a1, a2, a3, ...)
+
+  @Prop({ type: String, required: true })
+  questionId: string; // Reference đến question ID
+
+  @Prop({ required: true })
+  content: string;
+
+  @Prop()
+  explanation?: string;
+
+  @Prop({ default: false })
+  isCorrect: boolean;
+
+  @Prop({ default: 0 })
+  sortOrder: number;
+
+  @Prop({ type: String })
+  createdBy?: string; // Reference đến user ID
+
+  @Prop({ type: Date, default: Date.now })
+  createdAt: Date;
+
+  @Prop({ type: Date, default: Date.now })
+  updatedAt: Date;
+}
+
+export const AnswerSchema = SchemaFactory.createForClass(Answer);
+
+// Add indexes
+AnswerSchema.index({ questionId: 1 });
+AnswerSchema.index({ isCorrect: 1 });
+AnswerSchema.index({ sortOrder: 1 });
+AnswerSchema.index({ createdBy: 1 });
+```
+
+#### **5. User Progress Schema (Giữ nguyên cấu trúc user_progress.json)**
 ```typescript
 // src/progress/schemas/user-progress.schema.ts
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document, Types } from 'mongoose';
+import { Document } from 'mongoose';
 
 export type UserProgressDocument = UserProgress & Document;
 
-@Schema({ timestamps: true })
+@Schema({ 
+  timestamps: true,
+  _id: false // Sử dụng string ID từ JSON
+})
 export class UserProgress {
-  @Prop({ type: Types.ObjectId, ref: 'User', required: true })
-  userId: Types.ObjectId;
+  @Prop({ type: String, required: true, unique: true })
+  _id: string; // Giữ nguyên ID từ JSON (p1, p2, p3, ...)
 
-  @Prop({ type: Types.ObjectId, ref: 'Lesson' })
-  lessonId?: Types.ObjectId;
+  @Prop({ type: String, required: true })
+  userId: string; // Reference đến user ID
 
-  @Prop({ type: Types.ObjectId, ref: 'Question', required: true })
-  questionId: Types.ObjectId;
+  @Prop({ type: String })
+  lessonId?: string; // Reference đến lesson ID trong categories
+
+  @Prop({ type: String, required: true })
+  questionId: string; // Reference đến question ID
 
   @Prop({ 
     enum: ['not_started', 'in_progress', 'completed', 'reviewed'], 
@@ -417,8 +371,14 @@ export class UserProgress {
   @Prop({ default: 0, min: 0 })
   score: number;
 
-  @Prop()
+  @Prop({ type: Date })
   completedAt?: Date;
+
+  @Prop({ type: Date, default: Date.now })
+  createdAt: Date;
+
+  @Prop({ type: Date, default: Date.now })
+  updatedAt: Date;
 }
 
 export const UserProgressSchema = SchemaFactory.createForClass(UserProgress);
@@ -432,27 +392,28 @@ UserProgressSchema.index({ completedAt: 1 });
 // src/bookmarks/schemas/user-bookmark.schema.ts
 export type UserBookmarkDocument = UserBookmark & Document;
 
-@Schema({ timestamps: true })
+@Schema({ 
+  timestamps: true,
+  _id: false // Sử dụng string ID từ JSON
+})
 export class UserBookmark {
-  @Prop({ type: Types.ObjectId, ref: 'User', required: true })
-  userId: Types.ObjectId;
+  @Prop({ type: String, required: true, unique: true })
+  _id: string; // Giữ nguyên ID từ JSON (b1, b2, b3, ...)
 
-  // Store bookId as string since books are embedded in subjects
-  @Prop({ required: true })
-  bookId: string;
+  @Prop({ type: String, required: true })
+  userId: string; // Reference đến user ID
+
+  @Prop({ type: String, required: true })
+  bookId: string; // Reference đến book ID trong categories
 
   @Prop()
   notes?: string;
 
-  // Additional metadata for easier querying
-  @Prop()
-  subjectId?: string;
+  @Prop({ type: Date, default: Date.now })
+  createdAt: Date;
 
-  @Prop()
-  gradeLevel?: number;
-
-  @Prop()
-  bookName?: string;
+  @Prop({ type: Date, default: Date.now })
+  updatedAt: Date;
 }
 
 export const UserBookmarkSchema = SchemaFactory.createForClass(UserBookmark);
@@ -460,7 +421,7 @@ export const UserBookmarkSchema = SchemaFactory.createForClass(UserBookmark);
 // Add indexes
 UserBookmarkSchema.index({ userId: 1, bookId: 1 }, { unique: true });
 UserBookmarkSchema.index({ userId: 1 });
-UserBookmarkSchema.index({ subjectId: 1 });
+UserBookmarkSchema.index({ bookId: 1 });
 ```
 
 ---
@@ -486,7 +447,7 @@ npm install -D @types/mongoose @types/bcryptjs @types/passport-jwt
 npm install -D mongodb-memory-server # For testing
 ```
 
-### **Folder Structure**:
+### **Folder Structure (1:1 mapping với JSON files)**:
 ```
 src/
 ├── 📁 auth/                    # Authentication module
@@ -494,27 +455,27 @@ src/
 │   ├── strategies/
 │   ├── decorators/
 │   └── dto/
-├── 📁 users/                   # User management
+├── 📁 users/                   # User management (từ users.json)
 │   ├── schemas/
 │   ├── dto/
 │   └── services/
-├── 📁 subjects/                # Subject management (with embedded grades/books)
+├── 📁 categories/              # Category management (từ categories.json)
 │   ├── schemas/
 │   ├── dto/
 │   └── services/
-├── 📁 lessons/                 # Lesson management
+├── 📁 questions/               # Question management (từ questions.json)
 │   ├── schemas/
 │   ├── dto/
 │   └── services/
-├── 📁 questions/               # Question management (with embedded answers)
+├── 📁 answers/                 # Answer management (từ answers.json)
 │   ├── schemas/
 │   ├── dto/
 │   └── services/
-├── 📁 progress/                # User progress tracking
+├── 📁 progress/                # User progress tracking (từ user_progress.json)
 │   ├── schemas/
 │   ├── dto/
 │   └── services/
-├── 📁 bookmarks/               # User bookmarks
+├── 📁 bookmarks/               # User bookmarks (từ user_bookmarks.json)
 │   ├── schemas/
 │   ├── dto/
 │   └── services/
@@ -527,6 +488,8 @@ src/
 ├── 📁 config/                  # Configuration
 ├── 📁 database/                # Database connection config
 └── 📄 main.ts                  # Application entry point
+
+💡 MỖI MODULE TƯƠNG ỨNG 1:1 VỚI 1 JSON FILE
 ```
 
 ---
@@ -1018,69 +981,83 @@ export class DataMigration {
   }
 
   private async migrateCategories() {
-    console.log('📚 Migrating categories (subjects with embedded grades/books)...');
+    console.log('📚 Migrating categories (giữ nguyên cấu trúc JSON)...');
     const categoriesData = JSON.parse(
       fs.readFileSync(path.join(__dirname, '../app/data/categories.json'), 'utf8')
     );
 
-    const subjects = [];
-    for (const categoryData of categoriesData) {
-      const subject = {
-        _id: categoryData.id,
-        name: categoryData.name,
-        slug: this.slugify(categoryData.name),
-        description: categoryData.description || undefined,
-        icon: this.getSubjectIcon(categoryData.name),
-        sortOrder: 0,
-        isActive: true,
-        createdBy: categoryData.createdBy || undefined,
-        grades: []
-      };
-
-      // Process grades (embedded documents)
-      if (categoryData.children && Array.isArray(categoryData.children)) {
-        for (const gradeData of categoryData.children) {
-          const grade = {
-            _id: gradeData.id,
-            name: gradeData.name,
-            slug: this.slugify(gradeData.name),
-            level: this.extractGradeLevel(gradeData.name),
-            description: gradeData.description || undefined,
-            sortOrder: 0,
-            isActive: true,
-            createdBy: gradeData.createdBy || undefined,
-            books: []
-          };
-
-          // Process books (embedded in grades)
-          if (gradeData.children && Array.isArray(gradeData.children)) {
-            for (const bookData of gradeData.children) {
-              const book = {
-                _id: bookData.id,
-                name: bookData.name,
-                slug: this.slugify(bookData.name),
-                description: bookData.description || undefined,
-                publisher: this.extractPublisher(bookData.name),
-                coverImageUrl: undefined,
-                sortOrder: 0,
-                isActive: true,
-                createdBy: bookData.createdBy || undefined,
-                lessons: [] // Will be populated after lessons migration
-              };
-              
-              grade.books.push(book);
-            }
-          }
-          
-          subject.grades.push(grade);
-        }
-      }
-      
-      subjects.push(subject);
-    }
+    // Direct 1:1 mapping - giữ nguyên toàn bộ cấu trúc
+    const categories = categoriesData.map(categoryData => ({
+      _id: categoryData.id,
+      name: categoryData.name,
+      type: categoryData.type,
+      parentId: categoryData.parentId || undefined,
+      description: categoryData.description || undefined,
+      sortOrder: categoryData.sortOrder || 0,
+      isActive: categoryData.isActive !== false, // default true
+      createdBy: categoryData.createdBy || undefined,
+      children: categoryData.children || [], // Giữ nguyên nested structure
+      icon: this.getSubjectIcon(categoryData.name),
+      color: categoryData.color || undefined,
+      imageUrl: categoryData.imageUrl || undefined,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    }));
     
-    await this.subjectModel.insertMany(subjects);
-    console.log(`✅ Migrated ${subjects.length} subjects with embedded grades and books`);
+    await this.categoryModel.insertMany(categories);
+    console.log(`✅ Migrated ${categories.length} categories with original structure`);
+  }
+
+  private async migrateQuestions() {
+    console.log('❓ Migrating questions (giữ nguyên cấu trúc JSON)...');
+    const questionsData = JSON.parse(
+      fs.readFileSync(path.join(__dirname, '../app/data/questions.json'), 'utf8')
+    );
+
+    // Direct 1:1 mapping
+    const questions = questionsData.map(questionData => ({
+      _id: questionData.id,
+      lessonId: questionData.lessonId,
+      title: questionData.title,
+      content: questionData.content,
+      difficulty: questionData.difficulty || 'medium',
+      questionType: questionData.questionType || 'multiple_choice',
+      points: questionData.points || 1,
+      timeLimit: questionData.timeLimit || undefined,
+      hints: questionData.hints || [],
+      explanation: questionData.explanation || undefined,
+      tags: questionData.tags || [],
+      isActive: questionData.isActive !== false,
+      createdBy: questionData.createdBy || undefined,
+      createdAt: new Date(questionData.createdAt || Date.now()),
+      updatedAt: new Date(questionData.updatedAt || Date.now())
+    }));
+    
+    await this.questionModel.insertMany(questions);
+    console.log(`✅ Migrated ${questions.length} questions`);
+  }
+
+  private async migrateAnswers() {
+    console.log('💬 Migrating answers (giữ nguyên cấu trúc JSON)...');
+    const answersData = JSON.parse(
+      fs.readFileSync(path.join(__dirname, '../app/data/answers.json'), 'utf8')
+    );
+
+    // Direct 1:1 mapping
+    const answers = answersData.map(answerData => ({
+      _id: answerData.id,
+      questionId: answerData.questionId,
+      content: answerData.content,
+      explanation: answerData.explanation || undefined,
+      isCorrect: answerData.isCorrect || false,
+      sortOrder: answerData.sortOrder || 0,
+      createdBy: answerData.createdBy || undefined,
+      createdAt: new Date(answerData.createdAt || Date.now()),
+      updatedAt: new Date(answerData.updatedAt || Date.now())
+    }));
+    
+    await this.answerModel.insertMany(answers);
+    console.log(`✅ Migrated ${answers.length} answers`);
   }
 
   private async migrateLessons() {

@@ -37,7 +37,7 @@
 
 ## 📊 DATABASE SCHEMA DESIGN
 
-### **MongoDB Collections (Giữ nguyên cấu trúc JSON)**:
+### **MongoDB Collections (Flatten categories.json)**:
 ```
 📄 users Collection (từ users.json)
 ├── _id: string (giữ nguyên từ JSON)
@@ -45,11 +45,31 @@
 ├── avatar, role, grade, subjects
 └── permissions, isActive
 
-📄 categories Collection (từ categories.json)
-├── _id: string (giữ nguyên từ JSON)
-├── name, type, parentId
-├── children: [nested objects] (giữ nguyên cấu trúc hierarchical)
-└── sortOrder, isActive
+📄 subjects Collection (từ categories.json level 1)
+├── _id: string (sub1, sub2, ...)
+├── name, description, icon
+└── createdBy, createdAt, updatedAt
+
+📄 grades Collection (từ categories.json level 2)
+├── _id: string (gr1, gr2, ...)
+├── subjectId: string (reference to subjects)
+├── name, level, description
+└── createdBy, createdAt, updatedAt
+
+📄 books Collection (từ categories.json level 3)
+├── _id: string (bk1, bk2, ...)
+├── gradeId: string (reference to grades)
+├── subjectId: string (reference to subjects)
+├── name, publisher, description
+└── createdBy, createdAt, updatedAt
+
+📄 lessons Collection (từ categories.json level 4)
+├── _id: string (ls1, ls2, ...)
+├── bookId: string (reference to books)
+├── gradeId: string (reference to grades)
+├── subjectId: string (reference to subjects)
+├── name, content, description
+└── createdBy, createdAt, updatedAt
 
 📄 questions Collection (từ questions.json)
 ├── _id: string (giữ nguyên từ JSON)
@@ -141,30 +161,82 @@ UserSchema.pre('save', async function(next) {
 });
 ```
 
-#### **2. Categories Schema (Giữ nguyên cấu trúc categories.json)**
+#### **2. Subjects Schema (Level 1 từ categories.json)**
 ```typescript
-// src/categories/schemas/category.schema.ts
+// src/subjects/schemas/subject.schema.ts
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document } from 'mongoose';
 
-export type CategoryDocument = Category & Document;
+export type SubjectDocument = Subject & Document;
 
 @Schema({ 
   timestamps: true,
   _id: false // Sử dụng string ID từ JSON
 })
-export class Category {
+export class Subject {
   @Prop({ type: String, required: true, unique: true })
-  _id: string; // Giữ nguyên ID từ JSON (toan, tiengviet, lop1_toan, ...)
+  _id: string; // sub1, sub2, ...
 
   @Prop({ required: true, trim: true })
-  name: string;
+  name: string; // "Toán", "Tiếng Việt"
 
-  @Prop({ enum: ['subject', 'grade', 'book', 'lesson'], required: true })
-  type: string;
+  @Prop()
+  description?: string;
+
+  @Prop()
+  icon?: string; // 🔢, 📖
+
+  @Prop()
+  color?: string;
+
+  @Prop({ default: 0 })
+  sortOrder: number;
+
+  @Prop({ default: true })
+  isActive: boolean;
 
   @Prop({ type: String })
-  parentId?: string; // Reference đến parent category
+  createdBy?: string;
+
+  @Prop({ type: Date, default: Date.now })
+  createdAt: Date;
+
+  @Prop({ type: Date, default: Date.now })
+  updatedAt: Date;
+}
+
+export const SubjectSchema = SchemaFactory.createForClass(Subject);
+
+// Add indexes
+SubjectSchema.index({ name: 1 });
+SubjectSchema.index({ sortOrder: 1 });
+SubjectSchema.index({ isActive: 1 });
+```
+
+#### **3. Grades Schema (Level 2 từ categories.json)**
+```typescript
+// src/grades/schemas/grade.schema.ts
+import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
+import { Document } from 'mongoose';
+
+export type GradeDocument = Grade & Document;
+
+@Schema({ 
+  timestamps: true,
+  _id: false
+})
+export class Grade {
+  @Prop({ type: String, required: true, unique: true })
+  _id: string; // gr1, gr2, ...
+
+  @Prop({ type: String, required: true, ref: 'Subject' })
+  subjectId: string; // Reference to subjects collection
+
+  @Prop({ required: true, trim: true })
+  name: string; // "Lớp 1", "Lớp 2"
+
+  @Prop({ required: true, min: 1, max: 12 })
+  level: number; // 1, 2, 3, ...
 
   @Prop()
   description?: string;
@@ -178,31 +250,146 @@ export class Category {
   @Prop({ type: String })
   createdBy?: string;
 
-  // Giữ nguyên nested structure từ JSON
-  @Prop({ type: [Object], default: [] })
-  children: any[]; // Nested children như trong JSON gốc
+  @Prop({ type: Date, default: Date.now })
+  createdAt: Date;
 
-  // Metadata bổ sung
-  @Prop()
-  icon?: string;
-
-  @Prop()
-  color?: string;
-
-  @Prop()
-  imageUrl?: string;
+  @Prop({ type: Date, default: Date.now })
+  updatedAt: Date;
 }
 
-export const CategorySchema = SchemaFactory.createForClass(Category);
+export const GradeSchema = SchemaFactory.createForClass(Grade);
 
 // Add indexes
-CategorySchema.index({ type: 1 });
-CategorySchema.index({ parentId: 1 });
-CategorySchema.index({ name: 1 });
-CategorySchema.index({ sortOrder: 1 });
+GradeSchema.index({ subjectId: 1 });
+GradeSchema.index({ level: 1 });
+GradeSchema.index({ name: 1 });
+GradeSchema.index({ sortOrder: 1 });
 ```
 
-#### **3. Questions Schema (Giữ nguyên cấu trúc questions.json)**
+#### **4. Books Schema (Level 3 từ categories.json)**
+```typescript
+// src/books/schemas/book.schema.ts
+import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
+import { Document } from 'mongoose';
+
+export type BookDocument = Book & Document;
+
+@Schema({ 
+  timestamps: true,
+  _id: false
+})
+export class Book {
+  @Prop({ type: String, required: true, unique: true })
+  _id: string; // bk1, bk2, ...
+
+  @Prop({ type: String, required: true, ref: 'Grade' })
+  gradeId: string; // Reference to grades collection
+
+  @Prop({ type: String, required: true, ref: 'Subject' })
+  subjectId: string; // Reference to subjects collection
+
+  @Prop({ required: true, trim: true })
+  name: string; // "Kết nối tri thức Toán 1"
+
+  @Prop()
+  publisher?: string; // "Kết nối tri thức", "Chân trời sáng tạo"
+
+  @Prop()
+  description?: string;
+
+  @Prop()
+  coverImageUrl?: string;
+
+  @Prop()
+  publicationYear?: number;
+
+  @Prop({ default: 0 })
+  sortOrder: number;
+
+  @Prop({ default: true })
+  isActive: boolean;
+
+  @Prop({ type: String })
+  createdBy?: string;
+
+  @Prop({ type: Date, default: Date.now })
+  createdAt: Date;
+
+  @Prop({ type: Date, default: Date.now })
+  updatedAt: Date;
+}
+
+export const BookSchema = SchemaFactory.createForClass(Book);
+
+// Add indexes
+BookSchema.index({ gradeId: 1 });
+BookSchema.index({ subjectId: 1 });
+BookSchema.index({ name: 1 });
+BookSchema.index({ publisher: 1 });
+BookSchema.index({ sortOrder: 1 });
+```
+
+#### **5. Lessons Schema (Level 4 từ categories.json)**
+```typescript
+// src/lessons/schemas/lesson.schema.ts
+import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
+import { Document } from 'mongoose';
+
+export type LessonDocument = Lesson & Document;
+
+@Schema({ 
+  timestamps: true,
+  _id: false
+})
+export class Lesson {
+  @Prop({ type: String, required: true, unique: true })
+  _id: string; // ls1, ls2, ...
+
+  @Prop({ type: String, required: true, ref: 'Book' })
+  bookId: string; // Reference to books collection
+
+  @Prop({ type: String, required: true, ref: 'Grade' })
+  gradeId: string; // Reference to grades collection
+
+  @Prop({ type: String, required: true, ref: 'Subject' })
+  subjectId: string; // Reference to subjects collection
+
+  @Prop({ required: true, trim: true })
+  name: string; // "Bài 1: Phép cộng"
+
+  @Prop()
+  content?: string; // Rich text content
+
+  @Prop()
+  description?: string;
+
+  @Prop({ default: 0 })
+  sortOrder: number;
+
+  @Prop({ default: true })
+  isActive: boolean;
+
+  @Prop({ type: String })
+  createdBy?: string;
+
+  @Prop({ type: Date, default: Date.now })
+  createdAt: Date;
+
+  @Prop({ type: Date, default: Date.now })
+  updatedAt: Date;
+}
+
+export const LessonSchema = SchemaFactory.createForClass(Lesson);
+
+// Add indexes
+LessonSchema.index({ bookId: 1 });
+LessonSchema.index({ gradeId: 1 });
+LessonSchema.index({ subjectId: 1 });
+LessonSchema.index({ name: 1 });
+LessonSchema.index({ sortOrder: 1 });
+```
+
+#### **6. Questions Schema (Giữ nguyên cấu trúc questions.json)**
 ```typescript
 // src/questions/schemas/question.schema.ts
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
@@ -275,7 +462,7 @@ QuestionSchema.index({ questionType: 1 });
 QuestionSchema.index({ createdBy: 1 });
 ```
 
-#### **4. Answers Schema (Giữ nguyên cấu trúc answers.json)**
+#### **7. Answers Schema (Giữ nguyên cấu trúc answers.json)**
 ```typescript
 // src/answers/schemas/answer.schema.ts
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
@@ -325,7 +512,7 @@ AnswerSchema.index({ sortOrder: 1 });
 AnswerSchema.index({ createdBy: 1 });
 ```
 
-#### **5. User Progress Schema (Giữ nguyên cấu trúc user_progress.json)**
+#### **8. User Progress Schema (Giữ nguyên cấu trúc user_progress.json)**
 ```typescript
 // src/progress/schemas/user-progress.schema.ts
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
@@ -447,7 +634,7 @@ npm install -D @types/mongoose @types/bcryptjs @types/passport-jwt
 npm install -D mongodb-memory-server # For testing
 ```
 
-### **Folder Structure (1:1 mapping với JSON files)**:
+### **Folder Structure (Flatten categories.json)**:
 ```
 src/
 ├── 📁 auth/                    # Authentication module
@@ -459,7 +646,19 @@ src/
 │   ├── schemas/
 │   ├── dto/
 │   └── services/
-├── 📁 categories/              # Category management (từ categories.json)
+├── 📁 subjects/                # Subject management (level 1 của categories.json)
+│   ├── schemas/
+│   ├── dto/
+│   └── services/
+├── 📁 grades/                  # Grade management (level 2 của categories.json)
+│   ├── schemas/
+│   ├── dto/
+│   └── services/
+├── 📁 books/                   # Book management (level 3 của categories.json)
+│   ├── schemas/
+│   ├── dto/
+│   └── services/
+├── 📁 lessons/                 # Lesson management (level 4 của categories.json)
 │   ├── schemas/
 │   ├── dto/
 │   └── services/
@@ -489,7 +688,7 @@ src/
 ├── 📁 database/                # Database connection config
 └── 📄 main.ts                  # Application entry point
 
-💡 MỖI MODULE TƯƠNG ỨNG 1:1 VỚI 1 JSON FILE
+💡 CATEGORIES.JSON → 4 COLLECTIONS: SUBJECTS, GRADES, BOOKS, LESSONS
 ```
 
 ---
@@ -689,27 +888,44 @@ DELETE /users/:id              - Xóa user
 GET    /users/:id/progress     - Tiến độ học tập của user
 GET    /users/:id/bookmarks    - Sách yêu thích của user
 
-📚 CONTENT ENDPOINTS:
+📚 CONTENT ENDPOINTS (Flatten structure):
+
+# SUBJECTS ENDPOINTS:
 GET    /subjects               - Danh sách môn học
 POST   /subjects               - Tạo môn học (admin/teacher)
 GET    /subjects/:id           - Chi tiết môn học
 PUT    /subjects/:id           - Cập nhật môn học
 DELETE /subjects/:id           - Xóa môn học
-
 GET    /subjects/:id/grades    - Danh sách lớp theo môn học
+
+# GRADES ENDPOINTS:
+GET    /grades                 - Danh sách tất cả lớp
 POST   /grades                 - Tạo lớp học
 GET    /grades/:id             - Chi tiết lớp học
 PUT    /grades/:id             - Cập nhật lớp học
-
+DELETE /grades/:id             - Xóa lớp học
+GET    /grades/subject/:subjectId - Lớp theo môn học
 GET    /grades/:id/books       - Danh sách sách theo lớp
+
+# BOOKS ENDPOINTS:
+GET    /books                  - Danh sách tất cả sách
 POST   /books                  - Tạo sách
 GET    /books/:id              - Chi tiết sách
 PUT    /books/:id              - Cập nhật sách
-
+DELETE /books/:id              - Xóa sách
+GET    /books/grade/:gradeId   - Sách theo lớp
+GET    /books/subject/:subjectId - Sách theo môn học
 GET    /books/:id/lessons      - Danh sách bài học theo sách
+
+# LESSONS ENDPOINTS:
+GET    /lessons                - Danh sách tất cả bài học
 POST   /lessons                - Tạo bài học
 GET    /lessons/:id            - Chi tiết bài học
 PUT    /lessons/:id            - Cập nhật bài học
+DELETE /lessons/:id            - Xóa bài học
+GET    /lessons/book/:bookId   - Bài học theo sách
+GET    /lessons/grade/:gradeId - Bài học theo lớp
+GET    /lessons/subject/:subjectId - Bài học theo môn học
 
 ❓ QUESTION & ANSWER ENDPOINTS:
 GET    /lessons/:id/questions  - Danh sách câu hỏi theo bài học
@@ -910,8 +1126,11 @@ export class DataMigration {
   constructor(
     private userModel: Model<UserDocument>,
     private subjectModel: Model<SubjectDocument>,
+    private gradeModel: Model<GradeDocument>,
+    private bookModel: Model<BookDocument>,
     private lessonModel: Model<LessonDocument>,
     private questionModel: Model<QuestionDocument>,
+    private answerModel: Model<AnswerDocument>,
     private progressModel: Model<UserProgressDocument>,
     private bookmarkModel: Model<UserBookmarkDocument>,
   ) {}
@@ -981,31 +1200,98 @@ export class DataMigration {
   }
 
   private async migrateCategories() {
-    console.log('📚 Migrating categories (giữ nguyên cấu trúc JSON)...');
+    console.log('📚 Flattening categories.json into 4 collections...');
     const categoriesData = JSON.parse(
       fs.readFileSync(path.join(__dirname, '../app/data/categories.json'), 'utf8')
     );
 
-    // Direct 1:1 mapping - giữ nguyên toàn bộ cấu trúc
-    const categories = categoriesData.map(categoryData => ({
-      _id: categoryData.id,
-      name: categoryData.name,
-      type: categoryData.type,
-      parentId: categoryData.parentId || undefined,
-      description: categoryData.description || undefined,
-      sortOrder: categoryData.sortOrder || 0,
-      isActive: categoryData.isActive !== false, // default true
-      createdBy: categoryData.createdBy || undefined,
-      children: categoryData.children || [], // Giữ nguyên nested structure
-      icon: this.getSubjectIcon(categoryData.name),
-      color: categoryData.color || undefined,
-      imageUrl: categoryData.imageUrl || undefined,
-      createdAt: new Date(),
-      updatedAt: new Date()
-    }));
+    const subjects = [];
+    const grades = [];
+    const books = [];
+    const lessons = [];
+
+    // Flatten nested structure
+    for (const subject of categoriesData) {
+      // Level 1: Subjects
+      subjects.push({
+        _id: subject.id,
+        name: subject.name,
+        description: subject.description || undefined,
+        icon: this.getSubjectIcon(subject.name),
+        sortOrder: 0,
+        isActive: true,
+        createdBy: subject.createdBy,
+        createdAt: new Date(subject.createdAt),
+        updatedAt: new Date(subject.updatedAt || subject.createdAt)
+      });
+
+      // Level 2: Grades
+      if (subject.children) {
+        for (const grade of subject.children) {
+          grades.push({
+            _id: grade.id,
+            subjectId: subject.id,
+            name: grade.name,
+            level: this.extractGradeLevel(grade.name),
+            description: grade.description || undefined,
+            sortOrder: 0,
+            isActive: true,
+            createdBy: grade.createdBy,
+            createdAt: new Date(grade.createdAt),
+            updatedAt: new Date(grade.updatedAt || grade.createdAt)
+          });
+
+          // Level 3: Books
+          if (grade.children) {
+            for (const book of grade.children) {
+              books.push({
+                _id: book.id,
+                gradeId: grade.id,
+                subjectId: subject.id,
+                name: book.name,
+                publisher: this.extractPublisher(book.name),
+                description: book.description || undefined,
+                coverImageUrl: book.coverImageUrl || undefined,
+                publicationYear: book.publicationYear || undefined,
+                sortOrder: 0,
+                isActive: true,
+                createdBy: book.createdBy,
+                createdAt: new Date(book.createdAt),
+                updatedAt: new Date(book.updatedAt || book.createdAt)
+              });
+
+              // Level 4: Lessons
+              if (book.children) {
+                for (const lesson of book.children) {
+                  lessons.push({
+                    _id: lesson.id,
+                    bookId: book.id,
+                    gradeId: grade.id,
+                    subjectId: subject.id,
+                    name: lesson.name,
+                    content: lesson.content || undefined,
+                    description: lesson.description || undefined,
+                    sortOrder: 0,
+                    isActive: true,
+                    createdBy: lesson.createdBy,
+                    createdAt: new Date(lesson.createdAt),
+                    updatedAt: new Date(lesson.updatedAt || lesson.createdAt)
+                  });
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+
+    // Insert into separate collections
+    await this.subjectModel.insertMany(subjects);
+    await this.gradeModel.insertMany(grades);
+    await this.bookModel.insertMany(books);
+    await this.lessonModel.insertMany(lessons);
     
-    await this.categoryModel.insertMany(categories);
-    console.log(`✅ Migrated ${categories.length} categories with original structure`);
+    console.log(`✅ Migrated ${subjects.length} subjects, ${grades.length} grades, ${books.length} books, ${lessons.length} lessons`);
   }
 
   private async migrateQuestions() {
@@ -1159,16 +1445,22 @@ async function bootstrap() {
   
   const userModel = app.get<Model<UserDocument>>(getModelToken(User.name));
   const subjectModel = app.get<Model<SubjectDocument>>(getModelToken(Subject.name));
+  const gradeModel = app.get<Model<GradeDocument>>(getModelToken(Grade.name));
+  const bookModel = app.get<Model<BookDocument>>(getModelToken(Book.name));
   const lessonModel = app.get<Model<LessonDocument>>(getModelToken(Lesson.name));
   const questionModel = app.get<Model<QuestionDocument>>(getModelToken(Question.name));
+  const answerModel = app.get<Model<AnswerDocument>>(getModelToken(Answer.name));
   const progressModel = app.get<Model<UserProgressDocument>>(getModelToken(UserProgress.name));
   const bookmarkModel = app.get<Model<UserBookmarkDocument>>(getModelToken(UserBookmark.name));
 
   const migration = new DataMigration(
     userModel,
     subjectModel,
+    gradeModel,
+    bookModel,
     lessonModel,
     questionModel,
+    answerModel,
     progressModel,
     bookmarkModel,
   );

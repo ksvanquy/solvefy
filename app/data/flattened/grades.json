@@ -1,0 +1,46 @@
+[
+  {
+    "_id": "gr1",
+    "subjectId": "sub1",
+    "name": "Lớp 1",
+    "level": 1,
+    "sortOrder": 0,
+    "isActive": true,
+    "createdBy": "a1",
+    "createdAt": "2025-09-01T07:05:00.000Z",
+    "updatedAt": "2025-09-01T07:05:00.000Z"
+  },
+  {
+    "_id": "gr2",
+    "subjectId": "sub1",
+    "name": "Lớp 2",
+    "level": 2,
+    "sortOrder": 0,
+    "isActive": true,
+    "createdBy": "a1",
+    "createdAt": "2025-09-01T07:20:00.000Z",
+    "updatedAt": "2025-09-01T07:20:00.000Z"
+  },
+  {
+    "_id": "gr1",
+    "subjectId": "sub2",
+    "name": "Lớp 1",
+    "level": 1,
+    "sortOrder": 0,
+    "isActive": true,
+    "createdBy": "a1",
+    "createdAt": "2025-09-01T07:40:00.000Z",
+    "updatedAt": "2025-09-01T07:40:00.000Z"
+  },
+  {
+    "_id": "gr2",
+    "subjectId": "sub2",
+    "name": "Lớp 2",
+    "level": 2,
+    "sortOrder": 0,
+    "isActive": true,
+    "createdBy": "a1",
+    "createdAt": "2025-09-01T07:55:00.000Z",
+    "updatedAt": "2025-09-01T07:55:00.000Z"
+  }
+]

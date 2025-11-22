@@ -1,0 +1,98 @@
+[
+  {
+    "_id": "bk1",
+    "gradeId": "gr1",
+    "subjectId": "sub1",
+    "name": "Kết nối tri thức Toán 1",
+    "publisher": "Kết nối tri thức",
+    "sortOrder": 0,
+    "isActive": true,
+    "createdBy": "a1",
+    "createdAt": "2025-09-01T07:10:00.000Z",
+    "updatedAt": "2025-09-01T07:10:00.000Z"
+  },
+  {
+    "_id": "bk2",
+    "gradeId": "gr1",
+    "subjectId": "sub1",
+    "name": "Chân trời sáng tạo Toán 1",
+    "publisher": "Chân trời sáng tạo",
+    "sortOrder": 0,
+    "isActive": true,
+    "createdBy": "a1",
+    "createdAt": "2025-09-01T07:15:00.000Z",
+    "updatedAt": "2025-09-01T07:15:00.000Z"
+  },
+  {
+    "_id": "bk3",
+    "gradeId": "gr2",
+    "subjectId": "sub1",
+    "name": "Kết nối tri thức Toán 2",
+    "publisher": "Kết nối tri thức",
+    "sortOrder": 0,
+    "isActive": true,
+    "createdBy": "a1",
+    "createdAt": "2025-09-01T07:25:00.000Z",
+    "updatedAt": "2025-09-01T07:25:00.000Z"
+  },
+  {
+    "_id": "bk4",
+    "gradeId": "gr2",
+    "subjectId": "sub1",
+    "name": "Chân trời sáng tạo Toán 2",
+    "publisher": "Chân trời sáng tạo",
+    "sortOrder": 0,
+    "isActive": true,
+    "createdBy": "a1",
+    "createdAt": "2025-09-01T07:30:00.000Z",
+    "updatedAt": "2025-09-01T07:30:00.000Z"
+  },
+  {
+    "_id": "bk5",
+    "gradeId": "gr1",
+    "subjectId": "sub2",
+    "name": "Kết nối tri thức Tiếng Việt 1",
+    "publisher": "Kết nối tri thức",
+    "sortOrder": 0,
+    "isActive": true,
+    "createdBy": "a1",
+    "createdAt": "2025-09-01T07:45:00.000Z",
+    "updatedAt": "2025-09-01T07:45:00.000Z"
+  },
+  {
+    "_id": "bk6",
+    "gradeId": "gr1",
+    "subjectId": "sub2",
+    "name": "Chân trời sáng tạo Tiếng Việt 1",
+    "publisher": "Chân trời sáng tạo",
+    "sortOrder": 0,
+    "isActive": true,
+    "createdBy": "a1",
+    "createdAt": "2025-09-01T07:50:00.000Z",
+    "updatedAt": "2025-09-01T07:50:00.000Z"
+  },
+  {
+    "_id": "bk7",
+    "gradeId": "gr2",
+    "subjectId": "sub2",
+    "name": "Kết nối tri thức Tiếng Việt 2",
+    "publisher": "Kết nối tri thức",
+    "sortOrder": 0,
+    "isActive": true,
+    "createdBy": "a1",
+    "createdAt": "2025-09-01T08:00:00.000Z",
+    "updatedAt": "2025-09-01T08:00:00.000Z"
+  },
+  {
+    "_id": "bk8",
+    "gradeId": "gr2",
+    "subjectId": "sub2",
+    "name": "Chân trời sáng tạo Tiếng Việt 2",
+    "publisher": "Chân trời sáng tạo",
+    "sortOrder": 0,
+    "isActive": true,
+    "createdBy": "a1",
+    "createdAt": "2025-09-01T08:05:00.000Z",
+    "updatedAt": "2025-09-01T08:05:00.000Z"
+  }
+]

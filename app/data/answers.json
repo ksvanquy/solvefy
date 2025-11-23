@@ -76,5 +76,31 @@
     "createdBy": "t3",
     "createdAt": "2025-10-05T10:10:00Z",
     "updatedAt": "2025-10-05T10:10:00Z"
+  },
+  {
+    "id": "a7",
+    "questionId": "q9",
+    "answer": "adad",
+    "explain": "sdas",
+    "videoUrl": null,
+    "videoType": null,
+    "videoDuration": null,
+    "videoThumbnail": null,
+    "createdBy": "a1",
+    "createdAt": "2025-11-23T08:39:29.817Z",
+    "updatedAt": "2025-11-23T08:39:29.817Z"
+  },
+  {
+    "id": "a8",
+    "questionId": "q9",
+    "answer": "ád",
+    "explain": "ád",
+    "videoUrl": null,
+    "videoType": null,
+    "videoDuration": null,
+    "videoThumbnail": null,
+    "createdBy": "a1",
+    "createdAt": "2025-11-23T08:39:42.897Z",
+    "updatedAt": "2025-11-23T08:39:42.897Z"
   }
 ]

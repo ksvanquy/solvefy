@@ -78,5 +78,15 @@
     "updatedAt": "2025-11-23T07:36:07.676Z",
     "title": "Câu 1",
     "slug": "cau-1-q8"
+  },
+  {
+    "id": "q9",
+    "lessonId": "ls1",
+    "title": "Câu này 4",
+    "content": "Câu này 4",
+    "slug": "cau-nay-4-q9",
+    "createdBy": "a1",
+    "createdAt": "2025-11-23T08:39:23.956Z",
+    "updatedAt": "2025-11-23T08:39:23.956Z"
   }
 ]

@@ -23,27 +23,45 @@ export default function Home() {
   const [collapsedGrades, setCollapsedGrades] = useState<Set<string>>(new Set());
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [bookmarkedBooks, setBookmarkedBooks] = useState<Set<string>>(new Set());
+  const [loading, setLoading] = useState(true);
 
+  // ✅ NEW: Use RESTful API endpoints
   useEffect(() => {
-    fetch('/api/solve')
-      .then((r) => r.json())
-      .then((data) => {
-        if (data.subjects) setSubjects(data.subjects);
-        if (data.grades) setGrades(data.grades);
-        if (data.books) setBooks(data.books);
-        if (data.lessons) setLessons(data.lessons);
-        if (data.users) setUsers(data.users);
-      })
-      .catch((e) => console.error(e));
+    const loadData = async () => {
+      setLoading(true);
+      try {
+        // Parallel fetch all resources
+        const [subjectsRes, gradesRes, booksRes, lessonsRes, usersRes] = await Promise.all([
+          fetch('/api/subjects').then(r => r.json()),
+          fetch('/api/grades').then(r => r.json()),
+          fetch('/api/books').then(r => r.json()),
+          fetch('/api/lessons').then(r => r.json()),
+          fetch('/api/users').then(r => r.json()),
+        ]);
+
+        if (subjectsRes.success) setSubjects(subjectsRes.data || []);
+        if (gradesRes.success) setGrades(gradesRes.data || []);
+        if (booksRes.success) setBooks(booksRes.data || []);
+        if (lessonsRes.success) setLessons(lessonsRes.data || []);
+        if (usersRes.success) setUsers(usersRes.data || []);
+      } catch (error) {
+        console.error('Error loading data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadData();
   }, []);
 
+  // ✅ NEW: Use RESTful API for bookmarks
   useEffect(() => {
     if (user) {
       fetch(`/api/bookmarks?userId=${user.id}`)
         .then((r) => r.json())
         .then((data) => {
-          if (data.bookmarks) {
-            const bookIds = new Set<string>(data.bookmarks.map((b: any) => b.bookId as string));
+          if (data.success && data.data) {
+            const bookIds = new Set<string>(data.data.map((b: any) => b.bookId as string));
             setBookmarkedBooks(bookIds);
           }
         })
@@ -55,6 +73,7 @@ export default function Home() {
     return users.find((u) => u.id === userId);
   };
 
+  // ✅ NEW: Updated to handle new API response format
   const handleToggleBookmark = async (e: React.MouseEvent, bookId: string) => {
     e.preventDefault();
     e.stopPropagation();
@@ -68,7 +87,9 @@ export default function Home() {
         const response = await fetch(`/api/bookmarks?userId=${user.id}&bookId=${bookId}`, {
           method: 'DELETE',
         });
-        if (response.ok) {
+        const data = await response.json();
+        
+        if (data.success) {
           setBookmarkedBooks((prev) => {
             const next = new Set(prev);
             next.delete(bookId);
@@ -81,7 +102,9 @@ export default function Home() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ userId: user.id, bookId }),
         });
-        if (response.ok) {
+        const data = await response.json();
+        
+        if (data.success) {
           setBookmarkedBooks((prev) => new Set(prev).add(bookId));
         }
       }
@@ -137,6 +160,18 @@ export default function Home() {
   };
 
   const totalBooks = allBooks.length;
+
+  // ✅ NEW: Show loading state
+  if (loading) {
+    return (
+      <div className="h-screen flex items-center justify-center bg-zinc-50">
+        <div className="text-center">
+          <div className="text-6xl mb-4">📚</div>
+          <p className="text-zinc-600">Đang tải dữ liệu...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="h-screen flex flex-col bg-zinc-50">

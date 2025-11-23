@@ -2,50 +2,74 @@ import { NextRequest, NextResponse } from 'next/server';
 import fs from 'fs';
 import path from 'path';
 
-const progressPath = path.join(process.cwd(), 'app', 'data', 'user_progress.json');
+const dataDir = path.join(process.cwd(), 'app', 'data');
+const progressPath = path.join(dataDir, 'user_progress.json');
 
-// GET - Get user progress
+/**
+ * GET /api/progress
+ * Get user progress
+ * Query params:
+ *   - userId: filter by user (optional)
+ *   - lessonId: filter by lesson (optional)
+ */
 export async function GET(request: NextRequest) {
   try {
-    const url = new URL(request.url);
-    const userId = url.searchParams.get('userId');
-    const lessonId = url.searchParams.get('lessonId');
-
     const progressData = JSON.parse(fs.readFileSync(progressPath, 'utf-8'));
 
+    const searchParams = request.nextUrl.searchParams;
+    const userId = searchParams.get('userId');
+    const lessonId = searchParams.get('lessonId');
+
+    // Get specific lesson progress for user
     if (userId && lessonId) {
-      // Get specific lesson progress for user
       const progress = progressData.find(
         (p: any) => p.userId === userId && p.lessonId === lessonId
       );
-      return NextResponse.json({ progress: progress || null });
+      return NextResponse.json({
+        success: true,
+        data: progress || null,
+      });
     }
 
+    // Get all progress for user
     if (userId) {
-      // Get all progress for user
       const userProgress = progressData.filter((p: any) => p.userId === userId);
-      return NextResponse.json({ progress: userProgress });
+      return NextResponse.json({
+        success: true,
+        data: userProgress,
+        meta: { total: userProgress.length },
+      });
     }
 
-    return NextResponse.json({ progress: progressData });
+    // Get all progress
+    return NextResponse.json({
+      success: true,
+      data: progressData,
+      meta: { total: progressData.length },
+    });
   } catch (error) {
     console.error('Error reading progress:', error);
     return NextResponse.json(
-      { error: 'Failed to read progress' },
+      { success: false, error: 'Failed to fetch progress' },
       { status: 500 }
     );
   }
 }
 
-// POST - Create or update progress (mark lesson as completed)
+/**
+ * POST /api/progress
+ * Create or update progress (mark lesson as completed)
+ * Body: { userId, lessonId }
+ */
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const { userId, lessonId } = body;
 
+    // Validation
     if (!userId || !lessonId) {
       return NextResponse.json(
-        { error: 'Missing required fields (userId, lessonId)' },
+        { success: false, error: 'Missing required fields: userId, lessonId' },
         { status: 400 }
       );
     }
@@ -58,36 +82,38 @@ export async function POST(request: NextRequest) {
     );
 
     if (existingIndex !== -1) {
-      // Already completed, just update timestamp
+      // Already completed, update timestamp
       progressData[existingIndex].completedAt = new Date().toISOString();
       fs.writeFileSync(progressPath, JSON.stringify(progressData, null, 2));
 
       return NextResponse.json({
         success: true,
-        progress: progressData[existingIndex],
-      });
-    } else {
-      // Create new progress (mark as completed)
-      const newProgress = {
-        id: `up${Date.now()}`,
-        userId,
-        lessonId,
-        status: 'completed',
-        completedAt: new Date().toISOString(),
-      };
-
-      progressData.push(newProgress);
-      fs.writeFileSync(progressPath, JSON.stringify(progressData, null, 2));
-
-      return NextResponse.json({
-        success: true,
-        progress: newProgress,
+        data: progressData[existingIndex],
+        message: 'Progress updated successfully',
       });
     }
+
+    // Create new progress (mark as completed)
+    const newProgress = {
+      id: `up${Date.now()}`,
+      userId,
+      lessonId,
+      status: 'completed',
+      completedAt: new Date().toISOString(),
+    };
+
+    progressData.push(newProgress);
+    fs.writeFileSync(progressPath, JSON.stringify(progressData, null, 2));
+
+    return NextResponse.json({
+      success: true,
+      data: newProgress,
+      message: 'Progress created successfully',
+    }, { status: 201 });
   } catch (error) {
     console.error('Error updating progress:', error);
     return NextResponse.json(
-      { error: 'Failed to update progress' },
+      { success: false, error: 'Failed to update progress' },
       { status: 500 }
     );
   }

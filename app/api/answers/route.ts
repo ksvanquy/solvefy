@@ -2,45 +2,88 @@ import { NextRequest, NextResponse } from 'next/server';
 import fs from 'fs';
 import path from 'path';
 
-// GET: Get all answers or filter by questionId
+const dataDir = path.join(process.cwd(), 'app', 'data');
+
+/**
+ * GET /api/answers
+ * Get all answers or filter by question
+ * Query params:
+ *   - id: answer ID (optional)
+ *   - questionId: filter by question (optional)
+ *   - userId: filter by user (optional)
+ */
 export async function GET(request: NextRequest) {
   try {
-    const answersPath = path.join(process.cwd(), 'app', 'data', 'answers.json');
+    const answersPath = path.join(dataDir, 'answers.json');
     const answers = JSON.parse(fs.readFileSync(answersPath, 'utf-8'));
 
     const searchParams = request.nextUrl.searchParams;
+    const id = searchParams.get('id');
     const questionId = searchParams.get('questionId');
+    const userId = searchParams.get('userId');
 
-    if (questionId) {
-      const filtered = answers.filter((a: any) => a.questionId === questionId);
-      return NextResponse.json({ answers: filtered });
+    // Get specific answer by ID
+    if (id) {
+      const answer = answers.find((a: any) => a.id === id);
+      if (!answer) {
+        return NextResponse.json(
+          { success: false, error: 'Answer not found' },
+          { status: 404 }
+        );
+      }
+      return NextResponse.json({ success: true, data: answer });
     }
 
-    return NextResponse.json({ answers });
+    // Apply filters
+    let filteredAnswers = answers;
+    const filters: any = {};
+
+    if (questionId) {
+      filteredAnswers = filteredAnswers.filter((a: any) => a.questionId === questionId);
+      filters.questionId = questionId;
+    }
+
+    if (userId) {
+      filteredAnswers = filteredAnswers.filter((a: any) => a.createdBy === userId);
+      filters.userId = userId;
+    }
+
+    return NextResponse.json({
+      success: true,
+      data: filteredAnswers,
+      meta: {
+        total: filteredAnswers.length,
+        filters,
+      },
+    });
   } catch (error) {
     console.error('Error reading answers:', error);
     return NextResponse.json(
-      { error: 'Có lỗi xảy ra khi tải câu trả lời' },
+      { success: false, error: 'Failed to fetch answers' },
       { status: 500 }
     );
   }
 }
 
-// POST: Create new answer
+/**
+ * POST /api/answers
+ * Create a new answer
+ * Body: { questionId, answer, explain, videoUrl, videoType, userId }
+ */
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const { questionId, answer, explain, videoUrl, videoType, userId } = body;
 
+    // Validation
     if (!questionId || !answer || !userId) {
       return NextResponse.json(
-        { error: 'Thiếu thông tin bắt buộc (questionId, answer, userId)' },
+        { success: false, error: 'Missing required fields: questionId, answer, userId' },
         { status: 400 }
       );
     }
 
-    // Read existing answers
-    const answersPath = path.join(process.cwd(), 'app', 'data', 'answers.json');
+    const answersPath = path.join(dataDir, 'answers.json');
     const answers = JSON.parse(fs.readFileSync(answersPath, 'utf-8'));
 
     // Generate new answer ID
@@ -76,18 +119,17 @@ export async function POST(request: NextRequest) {
     };
 
     answers.push(newAnswer);
-
-    // Save to file
     fs.writeFileSync(answersPath, JSON.stringify(answers, null, 2), 'utf-8');
 
     return NextResponse.json({
-      message: 'Tạo câu trả lời thành công',
-      answer: newAnswer,
-    });
+      success: true,
+      data: newAnswer,
+      message: 'Answer created successfully',
+    }, { status: 201 });
   } catch (error) {
     console.error('Error creating answer:', error);
     return NextResponse.json(
-      { error: 'Có lỗi xảy ra khi tạo câu trả lời' },
+      { success: false, error: 'Failed to create answer' },
       { status: 500 }
     );
   }

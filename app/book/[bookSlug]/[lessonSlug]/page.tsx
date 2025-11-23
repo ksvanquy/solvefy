@@ -57,25 +57,29 @@ export default function BookLessonPage() {
   const [isBookmarked, setIsBookmarked] = useState(false);
   const [bookmarkLoading, setBookmarkLoading] = useState(false);
   const [progressMap, setProgressMap] = useState<Record<string, Progress>>({});
+  const [loading, setLoading] = useState(true);
 
+  // ✅ NEW: Use RESTful API for bookmarks and progress
   useEffect(() => {
     if (user) {
+      // Load bookmarks
       fetch(`/api/bookmarks?userId=${user.id}`)
         .then((r) => r.json())
         .then((data) => {
-          if (data.bookmarks && bookInfo.book) {
-            const bookmarked = data.bookmarks.some((b: any) => b.bookId === bookInfo.book?._id);
+          if (data.success && data.data && bookInfo.book) {
+            const bookmarked = data.data.some((b: any) => b.bookId === bookInfo.book?._id);
             setIsBookmarked(bookmarked);
           }
         })
         .catch((e) => console.error(e));
       
+      // Load progress
       fetch(`/api/progress?userId=${user.id}`)
         .then((r) => r.json())
         .then((data) => {
-          if (data.progress) {
+          if (data.success && data.data) {
             const progressByLesson: Record<string, Progress> = {};
-            data.progress.forEach((p: Progress) => {
+            data.data.forEach((p: Progress) => {
               progressByLesson[p.lessonId] = p;
             });
             setProgressMap(progressByLesson);
@@ -85,50 +89,69 @@ export default function BookLessonPage() {
     }
   }, [user, bookInfo.book]);
 
+  // ✅ NEW: Use RESTful API to load book data
   useEffect(() => {
-    fetch("/api/solve")
-      .then((r) => r.json())
-      .then((data) => {
-        if (data.books && data.subjects && data.grades && data.lessons && data.questions && data.users) {
-          const foundBook = data.books.find((b: Book) => b.slug === bookSlug);
-          
-          let subject = null;
-          let grade = null;
-          let bookWithLessons = null;
+    const loadBookData = async () => {
+      setLoading(true);
+      try {
+        // Get book by slug
+        const bookRes = await fetch(`/api/books?slug=${bookSlug}`).then(r => r.json());
+        
+        if (!bookRes.success || !bookRes.data) {
+          setLoading(false);
+          return;
+        }
 
-          if (foundBook) {
-            subject = data.subjects.find((s: Subject) => s._id === foundBook.subjectId);
-            grade = data.grades.find((g: Grade) => g._id === foundBook.gradeId && g.subjectId === foundBook.subjectId);
-            const bookLessons = data.lessons.filter((l: Lesson) => l.bookId === foundBook._id);
-            
-            bookWithLessons = {
-              ...foundBook,
-              children: bookLessons.map((l: Lesson) => ({ ...l, id: l._id })),
-            };
-          }
+        const foundBook = bookRes.data;
 
-          const bookCreator = foundBook?.createdBy 
-            ? data.users.find((u: User) => u.id === foundBook.createdBy) 
-            : null;
+        // Parallel fetch related data
+        const [subjectRes, gradeRes, lessonsRes, questionsRes, usersRes] = await Promise.all([
+          fetch(`/api/subjects?id=${foundBook.subjectId}`).then(r => r.json()),
+          fetch(`/api/grades?id=${foundBook.gradeId}`).then(r => r.json()),
+          fetch(`/api/lessons?bookId=${foundBook._id}`).then(r => r.json()),
+          fetch(`/api/questions`).then(r => r.json()),
+          fetch(`/api/users`).then(r => r.json()),
+        ]);
 
-          setBookInfo({ book: bookWithLessons, subject, grade, bookCreator });
-          setQuestions(data.questions);
-          setUsers(data.users);
-          
-          // Auto-select lesson based on lessonSlug or first lesson
-          if (bookWithLessons && bookWithLessons.children.length > 0) {
-            if (lessonSlug) {
-              const selectedLesson = bookWithLessons.children.find((l: Lesson) => l.slug === lessonSlug);
-              if (selectedLesson) {
-                setSelectedLessonId(selectedLesson.id || selectedLesson._id);
-              }
-            } else {
-              setSelectedLessonId(bookWithLessons.children[0].id || bookWithLessons.children[0]._id);
+        const subject = subjectRes.success ? subjectRes.data : null;
+        const grade = gradeRes.success ? gradeRes.data : null;
+        const bookLessons = lessonsRes.success ? lessonsRes.data : [];
+        const allQuestions = questionsRes.success ? questionsRes.data : [];
+        const allUsers = usersRes.success ? usersRes.data : [];
+
+        // Build book with lessons
+        const bookWithLessons = {
+          ...foundBook,
+          children: bookLessons.map((l: Lesson) => ({ ...l, id: l._id })),
+        };
+
+        const bookCreator = foundBook?.createdBy 
+          ? allUsers.find((u: User) => u.id === foundBook.createdBy) 
+          : null;
+
+        setBookInfo({ book: bookWithLessons, subject, grade, bookCreator });
+        setQuestions(allQuestions);
+        setUsers(allUsers);
+        
+        // Auto-select lesson based on lessonSlug or first lesson
+        if (bookWithLessons && bookWithLessons.children.length > 0) {
+          if (lessonSlug) {
+            const selectedLesson = bookWithLessons.children.find((l: Lesson) => l.slug === lessonSlug);
+            if (selectedLesson) {
+              setSelectedLessonId(selectedLesson.id || selectedLesson._id);
             }
+          } else {
+            setSelectedLessonId(bookWithLessons.children[0].id || bookWithLessons.children[0]._id);
           }
         }
-      })
-      .catch((e) => console.error(e));
+      } catch (error) {
+        console.error('Error loading book data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadBookData();
   }, [bookSlug, lessonSlug]);
 
   const getUserInfo = (userId: string) => {
@@ -165,13 +188,11 @@ export default function BookLessonPage() {
       });
 
       if (response.ok) {
-        fetch('/api/solve')
-          .then((r) => r.json())
-          .then((data) => {
-            if (data.questions) {
-              setQuestions(data.questions);
-            }
-          });
+        // ✅ NEW: Use RESTful API to reload questions
+        const questionsRes = await fetch('/api/questions').then(r => r.json());
+        if (questionsRes.success) {
+          setQuestions(questionsRes.data || []);
+        }
       }
     } catch (error) {
       console.error('Error deleting question:', error);
@@ -193,10 +214,11 @@ export default function BookLessonPage() {
 
       if (response.ok) {
         const data = await response.json();
-        if (data.progress) {
+        // ✅ NEW: Handle new API response format
+        if (data.success && data.data) {
           setProgressMap((prev) => ({
             ...prev,
-            [lessonId]: data.progress,
+            [lessonId]: data.data,
           }));
         }
       }
@@ -205,6 +227,7 @@ export default function BookLessonPage() {
     }
   };
 
+  // ✅ NEW: Updated to handle new API response format
   const handleToggleBookmark = async () => {
     if (!user || bookmarkLoading || !bookInfo.book) return;
 
@@ -214,7 +237,8 @@ export default function BookLessonPage() {
         const response = await fetch(`/api/bookmarks?userId=${user.id}&bookId=${bookInfo.book._id}`, {
           method: 'DELETE',
         });
-        if (response.ok) {
+        const data = await response.json();
+        if (data.success) {
           setIsBookmarked(false);
         }
       } else {
@@ -223,7 +247,8 @@ export default function BookLessonPage() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ userId: user.id, bookId: bookInfo.book._id }),
         });
-        if (response.ok) {
+        const data = await response.json();
+        if (data.success) {
           setIsBookmarked(true);
         }
       }
@@ -234,12 +259,14 @@ export default function BookLessonPage() {
     }
   };
 
+  // ✅ NEW: Updated to handle new API response format
   const handleSolve = async (qid: string) => {
     setLoadingId(qid);
     try {
       const res = await fetch(`/api/answers?questionId=${qid}`);
       const json = await res.json();
-      setAnswersMap((s) => ({ ...s, [qid]: json.answers || [] }));
+      // Handle new API format
+      setAnswersMap((s) => ({ ...s, [qid]: json.success ? (json.data || []) : [] }));
     } catch (err) {
       console.error(err);
       setAnswersMap((s) => ({ ...s, [qid]: [] }));
@@ -264,10 +291,14 @@ export default function BookLessonPage() {
     }
   }, [selectedLessonId, selectedQuestions.length]);
 
-  if (!bookInfo.book) {
+  // ✅ NEW: Show loading state
+  if (loading || !bookInfo.book) {
     return (
       <div className="min-h-screen bg-zinc-50 flex items-center justify-center">
-        <div className="text-zinc-600">Đang tải...</div>
+        <div className="text-center">
+          <div className="text-6xl mb-4">📚</div>
+          <p className="text-zinc-600">Đang tải dữ liệu...</p>
+        </div>
       </div>
     );
   }

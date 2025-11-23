@@ -1,6 +1,6 @@
 git status
 git add .
-git commit -m "flattern"
+git commit -m "resfull api"
 git push
 
 

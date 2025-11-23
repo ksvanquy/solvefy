@@ -5,15 +5,18 @@ import Link from "next/link";
 import Header from "./components/Header";
 import { useAuth } from "./contexts/AuthContext";
 
-type Lesson = { id: string; name: string; createdBy?: string };
-type Book = { id: string; name: string; children: Lesson[]; createdBy?: string };
-type Grade = { id: string; name: string; children: Book[] };
-type Subject = { id: string; name: string; children: Grade[] };
+type Lesson = { _id: string; bookId: string; gradeId: string; subjectId: string; name: string; createdBy?: string; sortOrder: number; isActive: boolean };
+type Book = { _id: string; gradeId: string; subjectId: string; name: string; publisher: string; createdBy?: string; sortOrder: number; isActive: boolean };
+type Grade = { _id: string; subjectId: string; name: string; level: number; createdBy?: string; sortOrder: number; isActive: boolean };
+type Subject = { _id: string; name: string; icon: string; createdBy?: string; sortOrder: number; isActive: boolean };
 type User = { id: string; username: string; fullName: string; role: string; avatar: string };
 
 export default function Home() {
   const { user, isAuthenticated } = useAuth();
-  const [categories, setCategories] = useState<Subject[]>([]);
+  const [subjects, setSubjects] = useState<Subject[]>([]);
+  const [grades, setGrades] = useState<Grade[]>([]);
+  const [books, setBooks] = useState<Book[]>([]);
+  const [lessons, setLessons] = useState<Lesson[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedSubject, setSelectedSubject] = useState<string>("all");
@@ -25,7 +28,10 @@ export default function Home() {
     fetch('/api/solve')
       .then((r) => r.json())
       .then((data) => {
-        if (data.categories) setCategories(data.categories);
+        if (data.subjects) setSubjects(data.subjects);
+        if (data.grades) setGrades(data.grades);
+        if (data.books) setBooks(data.books);
+        if (data.lessons) setLessons(data.lessons);
         if (data.users) setUsers(data.users);
       })
       .catch((e) => console.error(e));
@@ -84,31 +90,28 @@ export default function Home() {
     }
   };
 
-  // Flatten all books for search
+  // Enrich books with subject and grade information
   const allBooks = useMemo(() => {
-    const books: Array<Book & { subjectName: string; gradeName: string; subjectId: string; gradeId: string }> = [];
-    categories.forEach((subject) => {
-      subject.children.forEach((grade) => {
-        grade.children.forEach((book) => {
-          books.push({
-            ...book,
-            subjectName: subject.name,
-            gradeName: grade.name,
-            subjectId: subject.id,
-            gradeId: grade.id,
-          });
-        });
-      });
+    return books.map((book) => {
+      const subject = subjects.find((s) => s._id === book.subjectId);
+      const grade = grades.find((g) => g._id === book.gradeId && g.subjectId === book.subjectId);
+      const bookLessons = lessons.filter((l) => l.bookId === book._id);
+      return {
+        ...book,
+        id: book._id,
+        subjectName: subject?.name || '',
+        gradeName: grade?.name || '',
+        children: bookLessons.map(l => ({ ...l, id: l._id })),
+      };
     });
-    return books;
-  }, [categories]);
+  }, [books, subjects, grades, lessons]);
 
   // Filter books based on search and subject
   const filteredBooks = useMemo(() => {
     return allBooks.filter((book) => {
       const matchesSearch = searchTerm === "" || 
         book.name.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesSubject = selectedSubject === "all" || book.subjectId === selectedSubject;
+      const matchesSubject = selectedSubject === "all" || book._id.startsWith('bk') && book.subjectId === selectedSubject;
       return matchesSearch && matchesSubject;
     });
   }, [allBooks, searchTerm, selectedSubject]);
@@ -183,16 +186,16 @@ export default function Home() {
 
             <div className="my-2 border-t"></div>
 
-            {categories.map((subject) => {
-              const count = allBooks.filter((b) => b.subjectId === subject.id).length;
-              const isActive = selectedSubject === subject.id;
-              const icon = subject.name === "Toán" ? "🔢" : subject.name === "Tiếng Việt" ? "📖" : "📚";
+            {subjects.map((subject) => {
+              const count = allBooks.filter((b) => b.subjectId === subject._id).length;
+              const isActive = selectedSubject === subject._id;
+              const icon = subject.icon || (subject.name === "Toán" ? "🔢" : subject.name === "Tiếng Việt" ? "📖" : "📚");
               
               return (
                 <button
-                  key={subject.id}
+                  key={subject._id}
                   onClick={() => {
-                    setSelectedSubject(subject.id);
+                    setSelectedSubject(subject._id);
                     setSidebarOpen(false);
                   }}
                   className={`w-full text-left px-4 py-3 rounded-lg mb-1 transition-colors flex items-center justify-between ${
@@ -261,28 +264,30 @@ export default function Home() {
             </div>
           ) : (
             <div className="space-y-8">
-              {categories.map((subject) => {
-                if (!groupedBooks[subject.id]) return null;
+              {subjects.map((subject) => {
+                if (!groupedBooks[subject._id]) return null;
+                
+                const subjectGrades = grades.filter((g) => g.subjectId === subject._id);
                 
                 return (
-                  <div key={subject.id}>
+                  <div key={subject._id}>
                     <h2 className="text-2xl font-bold text-zinc-900 mb-4 flex items-center gap-2">
                       <span className="text-3xl">
-                        {subject.name === "Toán" ? "🔢" : "📖"}
+                        {subject.icon || (subject.name === "Toán" ? "🔢" : "📖")}
                       </span>
                       {subject.name}
                     </h2>
 
-                    {subject.children.map((grade) => {
-                      if (!groupedBooks[subject.id][grade.id]) return null;
+                    {subjectGrades.map((grade) => {
+                      if (!groupedBooks[subject._id][grade._id]) return null;
                       
-                      const isCollapsed = collapsedGrades.has(grade.id);
-                      const gradeBooks = groupedBooks[subject.id][grade.id];
+                      const isCollapsed = collapsedGrades.has(grade._id);
+                      const gradeBooks = groupedBooks[subject._id][grade._id];
 
                       return (
-                        <div key={grade.id} className="mb-6">
+                        <div key={grade._id} className="mb-6">
                           <button
-                            onClick={() => toggleGrade(grade.id)}
+                            onClick={() => toggleGrade(grade._id)}
                             className="flex items-center gap-2 mb-3 hover:text-indigo-600 transition-colors group"
                           >
                             <span className="text-lg group-hover:scale-110 transition-transform">
@@ -302,23 +307,23 @@ export default function Home() {
                                 const creator = book.createdBy ? getUserInfo(book.createdBy) : null;
                                 return (
                                   <Link
-                                    key={book.id}
-                                    href={`/book/${book.id}`}
+                                    key={book._id}
+                                    href={`/book/${book._id}`}
                                     className="group bg-white border-2 border-zinc-200 rounded-xl p-4 hover:border-indigo-500 hover:shadow-lg transition-all duration-200 relative"
                                   >
                                     {isAuthenticated && (
                                       <button
-                                        onClick={(e) => handleToggleBookmark(e, book.id)}
+                                        onClick={(e) => handleToggleBookmark(e, book._id)}
                                         className="absolute top-3 right-3 z-10 p-1.5 rounded-lg hover:bg-zinc-100 transition-colors"
                                         title={bookmarkedBooks.has(book.id) ? 'Đã lưu' : 'Lưu sách'}
                                       >
                                         <svg 
                                           className={`w-5 h-5 ${
-                                            bookmarkedBooks.has(book.id)
+                                            bookmarkedBooks.has(book._id)
                                               ? 'text-amber-500 fill-amber-500'
                                               : 'text-zinc-400 hover:text-amber-500'
                                           } transition-colors`}
-                                          fill={bookmarkedBooks.has(book.id) ? 'currentColor' : 'none'}
+                                          fill={bookmarkedBooks.has(book._id) ? 'currentColor' : 'none'}
                                           stroke="currentColor"
                                           viewBox="0 0 24 24"
                                         >

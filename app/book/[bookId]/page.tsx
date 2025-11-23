@@ -11,8 +11,10 @@ import { useAuth } from "../../contexts/AuthContext";
 
 type Question = { id: string; lessonId: string; title: string; content: string; createdBy?: string };
 type Answer = { id: string; questionId: string; answer: string; explain: string; createdBy?: string };
-type Lesson = { id: string; name: string; createdBy?: string };
-type Book = { id: string; name: string; children: Lesson[]; createdBy?: string };
+type Lesson = { _id: string; id?: string; bookId: string; gradeId: string; subjectId: string; name: string; createdBy?: string; sortOrder: number; isActive: boolean };
+type Book = { _id: string; gradeId: string; subjectId: string; name: string; publisher: string; createdBy?: string; sortOrder: number; isActive: boolean };
+type Subject = { _id: string; name: string; icon: string; createdBy?: string; sortOrder: number; isActive: boolean };
+type Grade = { _id: string; subjectId: string; name: string; level: number; createdBy?: string; sortOrder: number; isActive: boolean };
 type User = { id: string; username: string; fullName: string; role: string; avatar: string };
 type Progress = {
   id: string;
@@ -27,7 +29,7 @@ export default function BookPage() {
   const bookId = params.bookId as string;
   const { user, isAuthenticated } = useAuth();
   
-  const [bookInfo, setBookInfo] = useState<{ book: Book | null; subject: string; grade: string; bookCreator?: User | null }>({
+  const [bookInfo, setBookInfo] = useState<{ book: (Book & { children: Lesson[] }) | null; subject: string; grade: string; bookCreator?: User | null }>({
     book: null,
     subject: "",
     grade: "",
@@ -81,36 +83,38 @@ export default function BookPage() {
     fetch("/api/solve")
       .then((r) => r.json())
       .then((data) => {
-        if (data.categories && data.questions && data.users) {
-          // Find book in categories tree
-          let foundBook: Book | null = null;
+        if (data.books && data.subjects && data.grades && data.lessons && data.questions && data.users) {
+          // Find book by ID
+          const foundBook = data.books.find((b: Book) => b._id === bookId);
+          
           let subjectName = "";
           let gradeName = "";
+          let bookWithLessons = null;
 
-          for (const subject of data.categories) {
-            for (const grade of subject.children) {
-              const book = grade.children.find((b: Book) => b.id === bookId);
-              if (book) {
-                foundBook = book;
-                subjectName = subject.name;
-                gradeName = grade.name;
-                break;
-              }
-            }
-            if (foundBook) break;
+          if (foundBook) {
+            const subject = data.subjects.find((s: Subject) => s._id === foundBook.subjectId);
+            const grade = data.grades.find((g: Grade) => g._id === foundBook.gradeId && g.subjectId === foundBook.subjectId);
+            const bookLessons = data.lessons.filter((l: Lesson) => l.bookId === foundBook._id);
+            
+            subjectName = subject?.name || "";
+            gradeName = grade?.name || "";
+            bookWithLessons = {
+              ...foundBook,
+              children: bookLessons.map((l: Lesson) => ({ ...l, id: l._id })),
+            };
           }
 
           const bookCreator = foundBook?.createdBy 
             ? data.users.find((u: User) => u.id === foundBook.createdBy) 
             : null;
 
-          setBookInfo({ book: foundBook, subject: subjectName, grade: gradeName, bookCreator });
+          setBookInfo({ book: bookWithLessons, subject: subjectName, grade: gradeName, bookCreator });
           setQuestions(data.questions);
           setUsers(data.users);
           
           // Auto-select first lesson
-          if (foundBook && foundBook.children.length > 0) {
-            setSelectedLessonId(foundBook.children[0].id);
+          if (bookWithLessons && bookWithLessons.children.length > 0) {
+            setSelectedLessonId(bookWithLessons.children[0].id);
           }
         }
       })
@@ -241,7 +245,7 @@ export default function BookPage() {
   const getLessonQuestions = (lessonId: string) =>
     questions.filter((q) => q.lessonId === lessonId);
 
-  const selectedLesson = bookInfo.book?.children.find((l) => l.id === selectedLessonId);
+  const selectedLesson = bookInfo.book?.children.find((l) => (l.id || l._id) === selectedLessonId);
   const selectedQuestions = selectedLessonId ? getLessonQuestions(selectedLessonId) : [];
 
   // Auto-load all answers when lesson is selected
@@ -293,16 +297,17 @@ export default function BookPage() {
           
           <nav className="flex-1 overflow-y-auto p-2">
             {bookInfo.book.children.map((lesson) => {
-              const lessonQuestions = getLessonQuestions(lesson.id);
-              const isActive = selectedLessonId === lesson.id;
+              const lessonId = lesson.id || lesson._id;
+              const lessonQuestions = getLessonQuestions(lessonId);
+              const isActive = selectedLessonId === lessonId;
               const lessonCreator = lesson.createdBy ? getUserInfo(lesson.createdBy) : null;
-              const isCompleted = progressMap[lesson.id]?.status === 'completed';
+              const isCompleted = progressMap[lessonId]?.status === 'completed';
               
               return (
                 <button
-                  key={lesson.id}
+                  key={lessonId}
                   onClick={() => {
-                    setSelectedLessonId(lesson.id);
+                    setSelectedLessonId(lessonId);
                     setSidebarOpen(false); // Close sidebar on mobile after selection
                   }}
                   className={`w-full text-left p-3 rounded-lg mb-1 transition-colors relative ${
@@ -395,7 +400,7 @@ export default function BookPage() {
                       {selectedQuestions.length} câu hỏi
                     </p>
                   </div>
-                  {progressMap[selectedLesson.id]?.status === 'completed' && (
+                  {progressMap[selectedLesson.id || selectedLesson._id]?.status === 'completed' && (
                     <span className="inline-flex items-center gap-1 px-3 py-1 bg-green-100 text-green-700 text-sm font-medium rounded-full">
                       <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                         <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
@@ -405,9 +410,9 @@ export default function BookPage() {
                   )}
                 </div>
                 <div className="flex items-center gap-2">
-                  {isAuthenticated && !progressMap[selectedLesson.id] && (
+                  {isAuthenticated && !progressMap[selectedLesson.id || selectedLesson._id] && (
                     <button
-                      onClick={() => handleMarkLessonComplete(selectedLesson.id)}
+                      onClick={() => handleMarkLessonComplete(selectedLesson.id || selectedLesson._id)}
                       className="px-4 py-2 bg-green-100 text-green-700 border border-green-200 rounded-lg hover:bg-green-200 transition font-medium flex items-center gap-2"
                     >
                       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -490,7 +495,7 @@ export default function BookPage() {
       {/* Question Form Modal */}
       {showQuestionForm && selectedLesson && (
         <QuestionForm
-          lessonId={selectedLesson.id}
+          lessonId={selectedLesson.id || selectedLesson._id}
           lessonName={selectedLesson.name}
           onClose={() => {
             setShowQuestionForm(false);

@@ -12,9 +12,15 @@
     "bookmarkedAt": "2025-11-20T16:38:22.085Z"
   },
   {
-    "id": "ub1763783349912",
+    "id": "ub1763883089524",
     "userId": "u1",
     "bookId": "bk1",
-    "bookmarkedAt": "2025-11-22T03:49:09.912Z"
+    "bookmarkedAt": "2025-11-23T07:31:29.524Z"
+  },
+  {
+    "id": "ub1763883090243",
+    "userId": "u1",
+    "bookId": "bk2",
+    "bookmarkedAt": "2025-11-23T07:31:30.243Z"
   }
 ]

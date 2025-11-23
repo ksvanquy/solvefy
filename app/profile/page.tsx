@@ -46,28 +46,24 @@ export default function ProfilePage() {
       const bookmarksResponse = await fetch(`/api/bookmarks?userId=${user?.id}`);
       const bookmarksData = await bookmarksResponse.json();
       
-      // Fetch categories to get book names
+      // Fetch data to get book names
       const solveResponse = await fetch('/api/solve');
       const solveData = await solveResponse.json();
       
       // Map bookmarks with book details
       const bookmarksWithDetails = bookmarksData.bookmarks?.map((bookmark: any) => {
         let bookDetails = null;
-        if (solveData.categories) {
-          for (const subject of solveData.categories) {
-            for (const grade of subject.children) {
-              const book = grade.children.find((b: any) => b.id === bookmark.bookId);
-              if (book) {
-                bookDetails = {
-                  ...bookmark,
-                  bookName: book.name,
-                  subject: subject.name,
-                  grade: grade.name,
-                };
-                break;
-              }
-            }
-            if (bookDetails) break;
+        if (solveData.books && solveData.subjects && solveData.grades) {
+          const book = solveData.books.find((b: any) => b._id === bookmark.bookId);
+          if (book) {
+            const subject = solveData.subjects.find((s: any) => s._id === book.subjectId);
+            const grade = solveData.grades.find((g: any) => g._id === book.gradeId && g.subjectId === book.subjectId);
+            bookDetails = {
+              ...bookmark,
+              bookName: book.name,
+              subject: subject?.name || '',
+              grade: grade?.name || '',
+            };
           }
         }
         return bookDetails || bookmark;

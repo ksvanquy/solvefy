@@ -61,5 +61,14 @@
     "createdBy": "a1",
     "createdAt": "2025-11-20T16:06:21.121Z",
     "updatedAt": "2025-11-20T16:06:21.121Z"
+  },
+  {
+    "id": "q8",
+    "lessonId": "ls3",
+    "content": "Nội dung câu 1",
+    "createdBy": "u1",
+    "createdAt": "2025-11-23T07:35:56.246Z",
+    "updatedAt": "2025-11-23T07:36:07.676Z",
+    "title": "Câu 1"
   }
 ]

@@ -26,5 +26,12 @@
     "lessonId": "ls1",
     "status": "completed",
     "completedAt": "2025-11-20T16:33:15.885Z"
+  },
+  {
+    "id": "up1763883349781",
+    "userId": "u1",
+    "lessonId": "ls3",
+    "status": "completed",
+    "completedAt": "2025-11-23T07:35:49.781Z"
   }
 ]

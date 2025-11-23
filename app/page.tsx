@@ -5,10 +5,10 @@ import Link from "next/link";
 import Header from "./components/Header";
 import { useAuth } from "./contexts/AuthContext";
 
-type Lesson = { _id: string; bookId: string; gradeId: string; subjectId: string; name: string; createdBy?: string; sortOrder: number; isActive: boolean };
-type Book = { _id: string; gradeId: string; subjectId: string; name: string; publisher: string; createdBy?: string; sortOrder: number; isActive: boolean };
-type Grade = { _id: string; subjectId: string; name: string; level: number; createdBy?: string; sortOrder: number; isActive: boolean };
-type Subject = { _id: string; name: string; icon: string; createdBy?: string; sortOrder: number; isActive: boolean };
+type Lesson = { _id: string; bookId: string; gradeId: string; subjectId: string; name: string; slug: string; createdBy?: string; sortOrder: number; isActive: boolean };
+type Book = { _id: string; gradeId: string; subjectId: string; name: string; publisher: string; slug: string; createdBy?: string; sortOrder: number; isActive: boolean };
+type Grade = { _id: string; subjectId: string; name: string; slug: string; level: number; createdBy?: string; sortOrder: number; isActive: boolean };
+type Subject = { _id: string; name: string; slug: string; icon: string; createdBy?: string; sortOrder: number; isActive: boolean };
 type User = { id: string; username: string; fullName: string; role: string; avatar: string };
 
 export default function Home() {
@@ -308,7 +308,7 @@ export default function Home() {
                                 return (
                                   <Link
                                     key={book._id}
-                                    href={`/book/${book._id}`}
+                                    href={`/book/${book.slug}`}
                                     className="group bg-white border-2 border-zinc-200 rounded-xl p-4 hover:border-indigo-500 hover:shadow-lg transition-all duration-200 relative"
                                   >
                                     {isAuthenticated && (

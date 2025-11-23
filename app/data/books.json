@@ -9,7 +9,8 @@
     "isActive": true,
     "createdBy": "a1",
     "createdAt": "2025-09-01T07:10:00.000Z",
-    "updatedAt": "2025-09-01T07:10:00.000Z"
+    "updatedAt": "2025-09-01T07:10:00.000Z",
+    "slug": "ket-noi-tri-thuc-toan-1-bk1"
   },
   {
     "_id": "bk2",
@@ -21,7 +22,8 @@
     "isActive": true,
     "createdBy": "a1",
     "createdAt": "2025-09-01T07:15:00.000Z",
-    "updatedAt": "2025-09-01T07:15:00.000Z"
+    "updatedAt": "2025-09-01T07:15:00.000Z",
+    "slug": "chan-troi-sang-tao-toan-1-bk2"
   },
   {
     "_id": "bk3",
@@ -33,7 +35,8 @@
     "isActive": true,
     "createdBy": "a1",
     "createdAt": "2025-09-01T07:25:00.000Z",
-    "updatedAt": "2025-09-01T07:25:00.000Z"
+    "updatedAt": "2025-09-01T07:25:00.000Z",
+    "slug": "ket-noi-tri-thuc-toan-2-bk3"
   },
   {
     "_id": "bk4",
@@ -45,7 +48,8 @@
     "isActive": true,
     "createdBy": "a1",
     "createdAt": "2025-09-01T07:30:00.000Z",
-    "updatedAt": "2025-09-01T07:30:00.000Z"
+    "updatedAt": "2025-09-01T07:30:00.000Z",
+    "slug": "chan-troi-sang-tao-toan-2-bk4"
   },
   {
     "_id": "bk5",
@@ -57,7 +61,8 @@
     "isActive": true,
     "createdBy": "a1",
     "createdAt": "2025-09-01T07:45:00.000Z",
-    "updatedAt": "2025-09-01T07:45:00.000Z"
+    "updatedAt": "2025-09-01T07:45:00.000Z",
+    "slug": "ket-noi-tri-thuc-tieng-viet-1-bk5"
   },
   {
     "_id": "bk6",
@@ -69,7 +74,8 @@
     "isActive": true,
     "createdBy": "a1",
     "createdAt": "2025-09-01T07:50:00.000Z",
-    "updatedAt": "2025-09-01T07:50:00.000Z"
+    "updatedAt": "2025-09-01T07:50:00.000Z",
+    "slug": "chan-troi-sang-tao-tieng-viet-1-bk6"
   },
   {
     "_id": "bk7",
@@ -81,7 +87,8 @@
     "isActive": true,
     "createdBy": "a1",
     "createdAt": "2025-09-01T08:00:00.000Z",
-    "updatedAt": "2025-09-01T08:00:00.000Z"
+    "updatedAt": "2025-09-01T08:00:00.000Z",
+    "slug": "ket-noi-tri-thuc-tieng-viet-2-bk7"
   },
   {
     "_id": "bk8",
@@ -93,6 +100,7 @@
     "isActive": true,
     "createdBy": "a1",
     "createdAt": "2025-09-01T08:05:00.000Z",
-    "updatedAt": "2025-09-01T08:05:00.000Z"
+    "updatedAt": "2025-09-01T08:05:00.000Z",
+    "slug": "chan-troi-sang-tao-tieng-viet-2-bk8"
   }
 ]

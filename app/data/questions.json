@@ -6,7 +6,8 @@
     "content": "Tính tổng của 1 và 1",
     "createdBy": "a1",
     "createdAt": "2025-10-01T08:00:00Z",
-    "updatedAt": "2025-10-01T08:00:00Z"
+    "updatedAt": "2025-10-01T08:00:00Z",
+    "slug": "1-1--q1"
   },
   {
     "id": "q2",
@@ -15,7 +16,8 @@
     "content": "Tính tổng của 3 và 2",
     "createdBy": "a1",
     "createdAt": "2025-10-01T08:05:00Z",
-    "updatedAt": "2025-10-01T08:05:00Z"
+    "updatedAt": "2025-10-01T08:05:00Z",
+    "slug": "3-2--q2"
   },
   {
     "id": "q3",
@@ -24,7 +26,8 @@
     "content": "Tính hiệu của 5 trừ 2",
     "createdBy": "a1",
     "createdAt": "2025-10-01T08:10:00Z",
-    "updatedAt": "2025-10-01T08:10:00Z"
+    "updatedAt": "2025-10-01T08:10:00Z",
+    "slug": "5-2--q3"
   },
   {
     "id": "q4",
@@ -33,7 +36,8 @@
     "content": "Tính hiệu của 6 trừ 4",
     "createdBy": "a1",
     "createdAt": "2025-10-01T08:15:00Z",
-    "updatedAt": "2025-10-01T08:15:00Z"
+    "updatedAt": "2025-10-01T08:15:00Z",
+    "slug": "6-4--q4"
   },
   {
     "id": "q5",
@@ -42,7 +46,8 @@
     "content": "Hãy viết các chữ cái a, b, c theo mẫu. Chú ý nét viết và khoảng cách giữa các chữ cái.",
     "createdBy": "t3",
     "createdAt": "2025-10-05T10:00:00Z",
-    "updatedAt": "2025-10-05T10:00:00Z"
+    "updatedAt": "2025-10-05T10:00:00Z",
+    "slug": "viet-chu-cai-a-b-c-q5"
   },
   {
     "id": "q6",
@@ -51,7 +56,8 @@
     "content": "Quan sát các hình ảnh và nối với từ tương ứng. Hãy đọc to từ khi nối xong.",
     "createdBy": "t3",
     "createdAt": "2025-10-05T10:10:00Z",
-    "updatedAt": "2025-10-05T10:10:00Z"
+    "updatedAt": "2025-10-05T10:10:00Z",
+    "slug": "noi-tu-voi-hinh-q6"
   },
   {
     "id": "q7",
@@ -60,7 +66,8 @@
     "content": "Câu hỏi mẫu số 3 về phép cộng cơ bản",
     "createdBy": "a1",
     "createdAt": "2025-11-20T16:06:21.121Z",
-    "updatedAt": "2025-11-20T16:06:21.121Z"
+    "updatedAt": "2025-11-20T16:06:21.121Z",
+    "slug": "cau-hoi-so-3-q7"
   },
   {
     "id": "q8",
@@ -69,6 +76,7 @@
     "createdBy": "u1",
     "createdAt": "2025-11-23T07:35:56.246Z",
     "updatedAt": "2025-11-23T07:36:07.676Z",
-    "title": "Câu 1"
+    "title": "Câu 1",
+    "slug": "cau-1-q8"
   }
 ]

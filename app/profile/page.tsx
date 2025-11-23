@@ -61,6 +61,7 @@ export default function ProfilePage() {
             bookDetails = {
               ...bookmark,
               bookName: book.name,
+              bookSlug: book.slug,
               subject: subject?.name || '',
               grade: grade?.name || '',
             };
@@ -299,7 +300,7 @@ export default function ProfilePage() {
                 <div
                   key={index}
                   className="p-4 border border-gray-200 rounded-lg hover:border-blue-500 hover:shadow-md transition cursor-pointer"
-                  onClick={() => router.push(`/book/${bookmark.bookId}`)}
+                  onClick={() => router.push(`/book/${bookmark.bookSlug || bookmark.bookId}`)}
                 >
                   <div className="flex items-start justify-between mb-2">
                     <p className="font-medium text-gray-900 flex-1">{bookmark.bookName || bookmark.bookId}</p>

@@ -8,7 +8,8 @@
     "isActive": true,
     "createdBy": "a1",
     "createdAt": "2025-09-01T07:05:00.000Z",
-    "updatedAt": "2025-09-01T07:05:00.000Z"
+    "updatedAt": "2025-09-01T07:05:00.000Z",
+    "slug": "lop-1"
   },
   {
     "_id": "gr2",
@@ -19,7 +20,8 @@
     "isActive": true,
     "createdBy": "a1",
     "createdAt": "2025-09-01T07:20:00.000Z",
-    "updatedAt": "2025-09-01T07:20:00.000Z"
+    "updatedAt": "2025-09-01T07:20:00.000Z",
+    "slug": "lop-2"
   },
   {
     "_id": "gr1",
@@ -30,7 +32,8 @@
     "isActive": true,
     "createdBy": "a1",
     "createdAt": "2025-09-01T07:40:00.000Z",
-    "updatedAt": "2025-09-01T07:40:00.000Z"
+    "updatedAt": "2025-09-01T07:40:00.000Z",
+    "slug": "lop-1"
   },
   {
     "_id": "gr2",
@@ -41,6 +44,7 @@
     "isActive": true,
     "createdBy": "a1",
     "createdAt": "2025-09-01T07:55:00.000Z",
-    "updatedAt": "2025-09-01T07:55:00.000Z"
+    "updatedAt": "2025-09-01T07:55:00.000Z",
+    "slug": "lop-2"
   }
 ]

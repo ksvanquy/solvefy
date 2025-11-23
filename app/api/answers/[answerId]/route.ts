@@ -10,7 +10,7 @@ export async function PUT(
   try {
     const { answerId } = await params;
     const body = await request.json();
-    const { answer, explain, userId } = body;
+    const { answer, explain, videoUrl, videoType, userId } = body;
 
     if (!answer || !userId) {
       return NextResponse.json(
@@ -41,11 +41,26 @@ export async function PUT(
       );
     }
 
+    // Auto-generate thumbnail for YouTube videos
+    let videoThumbnail = answers[answerIndex].videoThumbnail;
+    if (videoUrl && videoType === 'youtube') {
+      const videoId = videoUrl.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&\s]+)/)?.[1];
+      if (videoId) {
+        videoThumbnail = `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`;
+      }
+    } else if (!videoUrl) {
+      videoThumbnail = null;
+    }
+
     // Update the answer
     const updatedAnswer = {
       ...answers[answerIndex],
       answer: answer.trim(),
       explain: explain?.trim() || '',
+      videoUrl: videoUrl || null,
+      videoType: videoType || null,
+      videoDuration: answers[answerIndex].videoDuration,
+      videoThumbnail,
       updatedAt: new Date().toISOString(),
     };
 

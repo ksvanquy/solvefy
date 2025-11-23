@@ -6,7 +6,7 @@ import { useAuth } from '../contexts/AuthContext';
 type AnswerFormProps = {
   questionId: string;
   questionContent: string;
-  existingAnswer?: { id: string; answer: string; explain: string } | null;
+  existingAnswer?: { id: string; answer: string; explain: string; videoUrl?: string | null; videoType?: string | null } | null;
   onClose: () => void;
   onSuccess: (newAnswer?: any) => void;
 };
@@ -15,6 +15,8 @@ export default function AnswerForm({ questionId, questionContent, existingAnswer
   const { user } = useAuth();
   const [answer, setAnswer] = useState('');
   const [explain, setExplain] = useState('');
+  const [videoUrl, setVideoUrl] = useState('');
+  const [videoType, setVideoType] = useState<'youtube' | 'uploaded' | 'vimeo' | ''>('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
 
@@ -22,6 +24,8 @@ export default function AnswerForm({ questionId, questionContent, existingAnswer
     if (existingAnswer) {
       setAnswer(existingAnswer.answer);
       setExplain(existingAnswer.explain);
+      setVideoUrl(existingAnswer.videoUrl || '');
+      setVideoType(existingAnswer.videoType as any || '');
     }
   }, [existingAnswer]);
 
@@ -48,6 +52,8 @@ export default function AnswerForm({ questionId, questionContent, existingAnswer
           questionId,
           answer: answer.trim(),
           explain: explain.trim(),
+          videoUrl: videoUrl.trim() || null,
+          videoType: videoUrl.trim() ? videoType : null,
           userId: user?.id,
         }),
       });
@@ -129,6 +135,55 @@ export default function AnswerForm({ questionId, questionContent, existingAnswer
             <p className="text-xs text-gray-500 mt-1">
               Giải thích chi tiết giúp người hỏi hiểu rõ hơn
             </p>
+          </div>
+
+          {/* Video Section */}
+          <div className="border-t pt-4">
+            <label className="block text-sm font-medium text-gray-700 mb-3">
+              📹 Thêm video hướng dẫn (tùy chọn)
+            </label>
+            
+            <div className="mb-3">
+              <label htmlFor="video-type" className="block text-xs text-gray-600 mb-1">
+                Loại video
+              </label>
+              <select
+                id="video-type"
+                value={videoType}
+                onChange={(e) => setVideoType(e.target.value as any)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition text-sm"
+              >
+                <option value="">-- Chọn loại video --</option>
+                <option value="youtube">YouTube</option>
+                <option value="vimeo">Vimeo</option>
+                <option value="uploaded">Video đã upload</option>
+              </select>
+            </div>
+
+            {videoType && (
+              <div>
+                <label htmlFor="video-url" className="block text-xs text-gray-600 mb-1">
+                  {videoType === 'youtube' && 'URL YouTube (ví dụ: https://www.youtube.com/watch?v=...)'}
+                  {videoType === 'vimeo' && 'URL Vimeo (ví dụ: https://vimeo.com/...)'}
+                  {videoType === 'uploaded' && 'Đường dẫn video (ví dụ: /videos/lessons/...)'}
+                </label>
+                <input
+                  id="video-url"
+                  type="text"
+                  value={videoUrl}
+                  onChange={(e) => setVideoUrl(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition text-sm"
+                  placeholder={
+                    videoType === 'youtube' ? 'https://www.youtube.com/watch?v=...' :
+                    videoType === 'vimeo' ? 'https://vimeo.com/...' :
+                    '/videos/lessons/my-video.mp4'
+                  }
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Video giúp giải thích rõ ràng và sinh động hơn
+                </p>
+              </div>
+            )}
           </div>
 
           <div className="flex items-center justify-end gap-3 pt-4">

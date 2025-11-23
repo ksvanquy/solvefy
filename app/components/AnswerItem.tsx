@@ -1,12 +1,17 @@
 'use client';
 
 import React from 'react';
+import VideoPlayer from './VideoPlayer';
 
 type Answer = { 
   id: string; 
   questionId: string; 
   answer: string; 
   explain: string; 
+  videoUrl?: string | null;
+  videoType?: 'youtube' | 'uploaded' | 'vimeo' | null;
+  videoDuration?: number | null;
+  videoThumbnail?: string | null;
   createdBy?: string 
 };
 
@@ -56,6 +61,19 @@ export default function AnswerItem({
           <div className="text-sm text-zinc-700 mb-2">
             <span className="font-medium">Giải thích:</span> {answer.explain}
           </div>
+          
+          {/* Video Player */}
+          {answer.videoUrl && answer.videoType && (
+            <div className="my-4">
+              <VideoPlayer
+                url={answer.videoUrl}
+                type={answer.videoType}
+                thumbnail={answer.videoThumbnail}
+                duration={answer.videoDuration}
+              />
+            </div>
+          )}
+
           <div className={`flex items-center justify-between pt-2 border-t ${
             isUserAnswer 
               ? 'border-blue-200' 

@@ -30,7 +30,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { questionId, answer, explain, userId } = body;
+    const { questionId, answer, explain, videoUrl, videoType, userId } = body;
 
     if (!questionId || !answer || !userId) {
       return NextResponse.json(
@@ -50,12 +50,26 @@ export async function POST(request: NextRequest) {
     }, 0);
     const newId = `a${maxId + 1}`;
 
+    // Auto-generate thumbnail for YouTube videos
+    let videoThumbnail = null;
+    let videoDuration = null;
+    if (videoUrl && videoType === 'youtube') {
+      const videoId = videoUrl.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&\s]+)/)?.[1];
+      if (videoId) {
+        videoThumbnail = `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`;
+      }
+    }
+
     // Create new answer
     const newAnswer = {
       id: newId,
       questionId,
       answer,
       explain: explain || '',
+      videoUrl: videoUrl || null,
+      videoType: videoType || null,
+      videoDuration,
+      videoThumbnail,
       createdBy: userId,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),

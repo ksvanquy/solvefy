@@ -115,7 +115,7 @@ export default function QuestionPage() {
       <Header
         breadcrumbs={[
           { label: "Trang chủ", href: "/" },
-          { label: "Câu hỏi", href: `/cau-hoi/${question.slug}` },
+          { label: "Câu hỏi", href: `/questions/${question.slug}` },
         ]}
         showMenuButton={false}
       />
